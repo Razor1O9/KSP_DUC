@@ -3,7 +3,7 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include <support.h>
+#include "bigint/build/include/support.h"
 
 //is this object a primitive object?
 #define MSB		(1 << (8 * sizeof(unsigned int) - 1))

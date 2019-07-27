@@ -1,0 +1,10 @@
+
+*.cmake
+
+*.txt
+
+Aufgabe_7/cmake-build-debug/CMakeFiles/
+
+Aufgabe_7/cmake-build-debug/
+
+*.xml
