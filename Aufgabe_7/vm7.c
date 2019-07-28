@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <windef.h>
 #include "bigint/build/include/bigint.h"
 #include "stack7.h"
 
 #define IMMEDIATE(x) ((x) & 0x00FFFFFF)
-#define SIGN_EXTEND(i) ((i) & 0x00800000 ? (i) | 0xFF000000 : (i)) 
+#define SIGN_EXTEND(i) ((i) & 0x00800000 ? (i) | 0xFF000000 : (i))
 
 #define HALT		0
 #define PUSHC		1
@@ -85,7 +86,7 @@ static unsigned int i = 0;
 // set breakpoint in debug mode
 static int breakpoint = -1;
 // next instruktion in debug mode
-static int step = 0; 
+static int step = 0;
 
 // it used in function break_point(char *x)
 static int value = 0;
@@ -105,6 +106,8 @@ typedef struct {
 } header_t;
 
 static header_t buffer;
+
+ObjRef copyObjectToFreeMem(ObjRef orig);
 
 void instruktion(int i) {
 	switch(ps[i] >> 24) {
@@ -161,37 +164,37 @@ void exec(int ir) {
 	int value = 0;
 	// int value2 = 0;
 		switch((ir >> 24)) {
-			case HALT: 
+			case HALT:
 				halt = 1; break;
 			case PUSHC: // push value ir ^ (1 << 24)
-				bigFromInt(SIGN_EXTEND(IMMEDIATE(ir)));		
+				bigFromInt(SIGN_EXTEND(IMMEDIATE(ir)));
 				pushObjRef(bip.res);
-				break; 				
-			case ADD: 
+				break;
+			case ADD:
 				bip.op1 = popObjRef();
 				bip.op2 = popObjRef();
 				bigAdd();
-				pushObjRef(bip.res); 
+				pushObjRef(bip.res);
 				break;
-			case SUB: 
+			case SUB:
 				bip.op2 = popObjRef();
 				bip.op1 = popObjRef();
 				bigSub();
-				pushObjRef(bip.res); 
+				pushObjRef(bip.res);
 				break;
-			case MUL: 
+			case MUL:
 				bip.op1 = popObjRef();
 				bip.op2 = popObjRef();
 				bigMul();
 				pushObjRef(bip.res);
 				break;
-			case DIV: 
+			case DIV:
 				bip.op2 = popObjRef();
 				bip.op1 = popObjRef();
 				bigDiv();
 				pushObjRef(bip.res);
 				break;
-			case MOD: 
+			case MOD:
 				bip.op2 = popObjRef();
 				bip.op1 = popObjRef();
 				bigDiv();
@@ -199,25 +202,25 @@ void exec(int ir) {
 				break;
 			case RDINT: // scan return 1 if read value successfully
 				if(scanf("%d", &value) == 1) {
-					bigFromInt(value);		
+					bigFromInt(value);
 					pushObjRef(bip.res);
 				} else {
 					printf("Error: no digits in input\n");
-					exit(1);				
+					exit(1);
 				}
 				break;
-			case WRINT: 
+			case WRINT:
 				bip.op1 = popObjRef();
 				bigPrint(stdout);
 				break;
-			case RDCHR: 
+			case RDCHR:
 				value = getchar();
-				bigFromInt(value);		
+				bigFromInt(value);
 				pushObjRef(bip.res);
 				break;
-			case WRCHR:  
+			case WRCHR:
 				bip.op1 = popObjRef();
-				printf("%c", bigToInt()); 
+				printf("%c", bigToInt());
 				break;
 			case PUSHG:
 				pushg(SIGN_EXTEND(IMMEDIATE(ir))); break;
@@ -244,7 +247,7 @@ void exec(int ir) {
 				if(bigCmp() == 0)
 					bigFromInt(1);
 				else
-					bigFromInt(0);		
+					bigFromInt(0);
 				pushObjRef(bip.res);
 				break;
 			case NE: // value1 != value2
@@ -253,7 +256,7 @@ void exec(int ir) {
 				if(bigCmp() == 0)
 					bigFromInt(0);
 				else
-					bigFromInt(1);		
+					bigFromInt(1);
 				pushObjRef(bip.res);
 				break;
 			case LT: // value1 < value2
@@ -262,7 +265,7 @@ void exec(int ir) {
 				if(bigCmp() < 0)
 					bigFromInt(1);
 				else
-					bigFromInt(0);		
+					bigFromInt(0);
 				pushObjRef(bip.res);
 				break;
 			case LE: // value1 <= value2
@@ -271,7 +274,7 @@ void exec(int ir) {
 				if(bigCmp() <= 0)
 					bigFromInt(1);
 				else
-					bigFromInt(0);		
+					bigFromInt(0);
 				pushObjRef(bip.res);
 				break;
 			case GT: // value1 > value2
@@ -280,7 +283,7 @@ void exec(int ir) {
 				if(bigCmp() > 0)
 					bigFromInt(1);
 				else
-					bigFromInt(0);		
+					bigFromInt(0);
 				pushObjRef(bip.res);
 				break;
 			case GE: // value1 >= value2
@@ -289,28 +292,28 @@ void exec(int ir) {
 				if(bigCmp() >= 0)
 					bigFromInt(1);
 				else
-					bigFromInt(0);		
+					bigFromInt(0);
 				pushObjRef(bip.res);
 				break;
 			case JMP: pc = IMMEDIATE(ir); break;
-			case BRF: 
+			case BRF:
 				bip.op1 = popObjRef();
 				if(bigToInt() == 0)
 					pc = IMMEDIATE(ir);
 				break;
-			case BRT: 
+			case BRT:
 				bip.op1 = popObjRef();
 				if(bigToInt() == 1)
 					pc = IMMEDIATE(ir);
 				break;
-			case CALL:		
+			case CALL:
 				pushNumber(pc);
 				pc = IMMEDIATE(ir);
 				break;
 			case RET:
 				pc = popNumber();
 				break;
-			case DROP: 
+			case DROP:
 				value = IMMEDIATE(ir);
 				while(value > 0) {
 					popObjRef();
@@ -322,12 +325,12 @@ void exec(int ir) {
 			case POPR:
 				r[0] = popObjRef(); break;
 			case DUP:
-				bip.res = popObjRef();		
+				bip.res = popObjRef();
 				pushObjRef(bip.res);
 				pushObjRef(bip.res);
-				break;	
+				break;
 			case NEW:
-				pushObjRef(newCompoundObject(SIGN_EXTEND(IMMEDIATE(ir))));	
+				pushObjRef(newCompoundObject(SIGN_EXTEND(IMMEDIATE(ir))));
 				break;
 			case GETF:
 				pushObjRef(GET_REFS(popObjRef())[SIGN_EXTEND(IMMEDIATE(ir))]);
@@ -352,7 +355,7 @@ void exec(int ir) {
 				bip.op1 = popObjRef();
 				bip.op2 = popObjRef();
 				GET_REFS(bip.op2)[bigToInt()] = bip.res;
-				break;	
+				break;
 			case GETSZ:
 				bip.op1 = popObjRef();
 				if(IS_PRIM(bip.op1))
@@ -386,11 +389,11 @@ void exec(int ir) {
 		}
 }
 
-void load_data(char file[]) { 
+void load_data(char file[]) {
 	r = malloc(sizeof(ObjRef));
 
 	/*create file pointer*/
-	FILE *fp;	
+	FILE *fp;
 
 	/*open file*/
 	fp = fopen(file, "r");
@@ -415,7 +418,7 @@ void load_data(char file[]) {
 			printf("Version number doesn't match the version number of VM\n");
 			exit(1);
 		}
-				
+
 		// allocatre memory for Static Data Area
 		// warum sizeof(static_data_area) = 8 anstatt 108?
 		static_data_area = malloc(buffer.sda * sizeof(ObjRef));
@@ -427,12 +430,12 @@ void load_data(char file[]) {
 		// allocate memory program memory
 		// warum sizeof(ps) = 8 anstatt 108?
 		ps = malloc(buffer.noi * sizeof(int));
-		
+
 		if(ps == NULL) {
 			printf("memory is full.");
 			exit(1);
 		}
-				
+
 		// read Instruktionen
 		if(fread(ps, sizeof(int), buffer.noi, fp) != buffer.noi) {
 			printf("Error: reading\n");
@@ -448,7 +451,7 @@ void read_line(char *str) {
 	count = 0;
 	char c;
 
-	// result: 
+	// result:
 	// maximum one blank
 	// write big input without care array size
 	while((c = getchar()) != '\n') {		// 10 --> character '\n'
@@ -460,24 +463,24 @@ void read_line(char *str) {
 			count++;
 		}
 	}
-	
+
 	if(count)
 		str[count] = '\0';			// end of String terminate by '\0'
 	else {
 		str[count] = '\n';			// if user doesn't input anything example below
 		str[++count] = '\0';			// strncmp("\0", "inspect", 0) = 0 == 0 consequences program continue
-	}						
+	}
 }
 
 void inspect(char *x) {
 	unsigned int hexValue = 0;
 	int *ptr;
-	void *a = NULL;	
+	void *a = NULL;
 	int j = 0;
 	printf("DEBUG [inspect]: stack, data, object?\n");
-			
+
 	read_line(x);
-	
+
 
 	if(strncmp(x, "data", count) == 0) {
 		for(int i = 0; i < buffer.sda; i++)
@@ -496,7 +499,7 @@ void inspect(char *x) {
 							printf("fp\t--->\t%.4d:\t(objref) %p\n", i, (void*) stack[i].u.objRef);
 						else
 							printf("fp\t--->\t%.4d:\t(number) %d\n", i, stack[i].u.number);
-					else 
+					else
 						if(is_objRef(i))
 							printf("\t\t%.4d:\t(objref) %p\n", i, (void*) stack[i].u.objRef);
 						else
@@ -529,7 +532,7 @@ void inspect(char *x) {
 
 void list(int prog_size) {
 	for(int i = 0; i < prog_size; i++) {
-		instruktion(i);	
+		instruktion(i);
 	}
 	printf("\t--- end of code ---\n");
 }
@@ -540,7 +543,7 @@ void break_point(char *x) {
 	else
 		printf("DEBUG [breakpoint]: set at %d\n", value);
 	printf("DEBUG [breakpoint]: address to set, -1 to clear, <ret> for no change?\n");
-		
+
 	read_line(x);
 	// explicit input 0 because function atoi(int) = 0 if parameter is not a number
 	if(strcmp(x, "0") == 0) {
@@ -550,20 +553,20 @@ void break_point(char *x) {
 	} else if(strcmp(x, "-1") == 0) {
 		value = -1;
 		printf("DEBUG [breakpoint]: now cleared\n");
-		return; 
+		return;
 	}
 
 	// does not include character
-	for(int i = 0; i < count; i++)  
+	for(int i = 0; i < count; i++)
 		if(x[i] < 48 || x[i] > 57) 		// 48 == '0' ... 57 == '9'
 			return;
-		
+
 	value = atoi(x);
 	if(value < 0 || value > buffer.noi)
 		printf("number of instruction = %d\n", buffer.noi);
 	else if(value != 0) {
 		breakpoint = value;		// important for function run()
-		printf("DEBUG [breakpoint]: now set at %d\n", breakpoint);	
+		printf("DEBUG [breakpoint]: now set at %d\n", breakpoint);
 	}
 }
 
@@ -573,13 +576,13 @@ void run(void) {
 		if(pc == breakpoint) {
 			i = pc;
 			return;
-		} else 
+		} else
 
 		if(step) {
 			i = pc;
 			return;
 		}
-		
+
 		if(switcher)
 			step = 1;
 		ir = ps[pc];
@@ -600,7 +603,7 @@ void debug(void) {
 	printf("DEBUG: inspect, list, breakpoint, step, run, quit?\n");
 
 	read_line(input);
-	
+
 	if(strncmp(input, "inspect", count) == 0)
 		option = INSPECT;
 	else if(strncmp(input, "list", count) == 0)
@@ -647,8 +650,8 @@ int f(int argc, char *argv[]) {
 	if(strcmp(argv[argc], "--version") == 0) {
 		printf("Ninja Virtual Machine version %d (compiled %s, %s)\n", VERSION, __DATE__, __TIME__);
 		return 1;
-	} 
-	
+	}
+
 	if(strcmp(argv[argc], "--help") == 0) {
 		printf("usage: ./njvm [options] <code file>\n");
 		printf("Option:\n");
@@ -657,7 +660,7 @@ int f(int argc, char *argv[]) {
    		printf("  --help\t   show this help and exit\n");
 		return 1;
 	}
-	
+
 	if(strncmp(argv[argc], "-", 1) == 0 && strcmp(argv[argc], "--debug") != 0) {
 		printf("Error: unknown option '%s', try './njvm --help'\n", argv[argc]);
 		return 1;
@@ -666,8 +669,8 @@ int f(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	
-	if(argc == 1) 
+
+	if(argc == 1)
 		printf("Error: no code file specified\n");
 	else if(argc == 2) {
 		if(f(1, argv) == 1)
@@ -678,18 +681,18 @@ int main(int argc, char *argv[]) {
 			load_data(argv[1]);
 
 			printf("Ninja Virtual Machine started\n");
-		
+
 			// start program
 			step = 0;
 			switcher = 0;
 			run();
-				
+
 			// release memory from ps
 			free(ps);
 
 			// release memory from static_data_area
 			free(static_data_area);
-		}	
+		}
 	} else if(argc == 3) {
 		if(f(1, argv) == 1)
 			;
@@ -702,7 +705,7 @@ int main(int argc, char *argv[]) {
 				printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
 				printf("Ninja Virtual Machine started\n");
 				while(!halt) {
-					debug();			
+					debug();
 				}
 			}
 		} else if(strcmp(argv[2], "--debug") == 0) {
@@ -712,11 +715,11 @@ int main(int argc, char *argv[]) {
 				printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
 				printf("Ninja Virtual Machine started\n");
 				while(!halt) {
-					debug();			
+					debug();
 				}
 			}
-		} else 
-			printf("Error: more than one code file specified\n");		
+		} else
+			printf("Error: more than one code file specified\n");
 	} else if(argc > 3) {
 		if(f(1, argv) == 1)
 			;
@@ -726,9 +729,34 @@ int main(int argc, char *argv[]) {
 			if(f(3, argv) == 0)
 				printf("Error: more than one code file specified\n");
 		} else
-			printf("Error: more than one code file specified\n");	
-				
+			printf("Error: more than one code file specified\n");
+
 	}
-	
+
 	return 0;
 }
+// ToDo
+/* Garbage Collector starts here */
+ObjRef relocate(ObjRef orig) {
+    ObjRef copy;
+    if (orig == NULL) {
+/* relocate(nil) = nil */
+        copy = NULL;
+    } else if (orig -> brokenHeart ) {
+/* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
+        copy = orig -> forwardPointer ;
+    } else {
+/* Objekt muss noch kopiert werden */
+        copy = copyObjectToFreeMem (orig );
+/* im Original: setze Broken -Heart -Flag und Forward -Pointer */
+        orig -> brokenHeart = TRUE;
+        orig -> forwardPointer = copy;
+    }
+/* Adresse des kopierten Objektes zurück */
+    return copy;
+}
+
+ObjRef copyObjectToFreeMem(ObjRef orig) {
+    return NULL;
+}
+/* Garbage Collector ends here */

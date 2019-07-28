@@ -7,6 +7,8 @@
 #define _SUPPORT_H_
 
 
+#include <stdbool.h>
+
 /* object representation */
 
 typedef struct {
