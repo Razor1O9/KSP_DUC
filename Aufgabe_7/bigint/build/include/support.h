@@ -14,6 +14,8 @@
 typedef struct {
   unsigned int size;			/* byte count of payload data */
   unsigned char data[1];		/* payload data, size as needed */
+    bool brokenHeart;
+    ObjRef forwardPointer;
 } *ObjRef;
 
 
