@@ -840,3 +840,28 @@ int main(int argc, char *argv[]) {
 	} 
 	return 0;
 }
+// ToDo
+/* Garbage Collector starts here */
+ObjRef relocate(ObjRef orig) {
+    ObjRef copy;
+    if (orig == NULL) {
+/* relocate(nil) = nil */
+        copy = NULL;
+    } else if (orig -> brokenHeart ) {
+/* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
+        copy = orig -> forwardPointer ;
+    } else {
+/* Objekt muss noch kopiert werden */
+        copy = copyObjectToFreeMem (orig );
+/* im Original: setze Broken -Heart -Flag und Forward -Pointer */
+        orig -> brokenHeart = TRUE;
+        orig -> forwardPointer = copy;
+    }
+/* Adresse des kopierten Objektes zurück */
+    return copy;
+}
+
+ObjRef copyObjectToFreeMem(ObjRef orig) {
+    return NULL;
+}
+/* Garbage Collector ends here */
