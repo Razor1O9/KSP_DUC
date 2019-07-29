@@ -8,3 +8,19 @@ Aufgabe_7/cmake-build-debug/CMakeFiles/
 Aufgabe_7/cmake-build-debug/
 
 *.xml
+
+*.includecache
+
+*.make
+
+cmake-build-debug/CMakeFiles/Progress/
+
+*.check_cache
+
+cmake-build-debug/CMakeFiles/
+
+*.iml
+
+*.cbp
+
+cmake-build-debug/

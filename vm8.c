@@ -743,13 +743,13 @@ void start(char *argv) {
     }
 
     if(set_heap_size > 0) {
-        ziel_halspeicher = malloc(set_heap_size * 512);
-        memory_is_full(ziel_halspeicher);
+        ziel_halbspeicher = malloc(set_heap_size * 512);
+        memory_is_full(ziel_halbspeicher);
         quell_halbspeicher = malloc(set_heap_size * 512);
         memory_is_full(quell_halbspeicher);
     } else {
-        ziel_halspeicher = malloc(8192 * 512);
-        memory_is_full(ziel_halspeicher);
+        ziel_halbspeicher = malloc(8192 * 512);
+        memory_is_full(ziel_halbspeicher);
         quell_halbspeicher = malloc(8192 * 512);
         memory_is_full(quell_halbspeicher);
     }
