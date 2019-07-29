@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include "stack8.h"
 
-Stackslot stack[SIZE];
+Stackslot *stack;
+char *heap1;
+char *heap2;
 ObjRef *static_data_area;
 // stackpointer
 unsigned int sp = 0;
@@ -12,6 +14,7 @@ unsigned int fp = 0;
 // instruktion popr save in stack or r?
 // return register
 ObjRef *r;
+int max_size = 0;
 
 ObjRef newCompoundObject(int objRefSize) {
     ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
@@ -32,7 +35,7 @@ int is_objRef(int i) {
 }
 
 void pushNumber(int x) {
-	if(sp >= SIZE) {
+	if(sp >= max_size) {
 		printf("stackoverflow.\n");
 		exit(1);
 	} else {
@@ -56,7 +59,7 @@ int popNumber(void) {
 }
 
 void pushObjRef(ObjRef x) {
-	if(sp >= SIZE) {
+	if(sp >= max_size) {
 		printf("stackoverflow.\n");
 		exit(1);
 	} else {

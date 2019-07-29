@@ -13,8 +13,6 @@
 //calculate a pointer on the first objectrefernce of object
 #define GET_REFS(objRef) ((ObjRef *)(objRef)->data)
 
-#define SIZE	10000
-
 typedef struct {
 	unsigned int isObjRef;
 	union {
@@ -23,11 +21,14 @@ typedef struct {
 	} u;
 } Stackslot;
 
-extern Stackslot stack[SIZE];
+extern Stackslot *stack;
+extern char *heap1;
+extern char *heap1;
 extern ObjRef *static_data_area;
 extern unsigned int sp;
 extern unsigned int fp;
 extern ObjRef *r;
+extern int max_size;
 
 int is_objRef(int);
 void pushNumber(int);
