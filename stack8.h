@@ -22,8 +22,8 @@ typedef struct {
 } Stackslot;
 
 extern Stackslot *stack;
-extern char *heap1;
-extern char *heap1;
+extern char *ziel_halbspeicher;
+extern char *quell_halbspeicher;
 extern ObjRef *static_data_area;
 extern unsigned int sp;
 extern unsigned int fp;

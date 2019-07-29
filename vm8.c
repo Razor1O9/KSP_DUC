@@ -743,15 +743,15 @@ void start(char *argv) {
     }
 
     if(set_heap_size > 0) {
-        heap1 = malloc(set_heap_size * 512);
-        memory_is_full(heap1);
-        heap2 = malloc(set_heap_size * 512);
-        memory_is_full(heap2);
+        ziel_halspeicher = malloc(set_heap_size * 512);
+        memory_is_full(ziel_halspeicher);
+        quell_halbspeicher = malloc(set_heap_size * 512);
+        memory_is_full(quell_halbspeicher);
     } else {
-        heap1 = malloc(8192 * 512);
-        memory_is_full(heap1);
-        heap2 = malloc(8192 * 512);
-        memory_is_full(heap2);
+        ziel_halspeicher = malloc(8192 * 512);
+        memory_is_full(ziel_halspeicher);
+        quell_halbspeicher = malloc(8192 * 512);
+        memory_is_full(quell_halbspeicher);
     }
 
 	if(start_debug && bin == 1) {
@@ -892,6 +892,8 @@ ObjRef relocate(ObjRef orig) {
 }
 
 ObjRef copyObjectToFreeMem(ObjRef orig) {
-    return NULL;
+
+
+    return orig;
 }
 /* Garbage Collector ends here */

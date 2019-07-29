@@ -3,8 +3,8 @@
 #include "stack8.h"
 
 Stackslot *stack;
-char *heap1;
-char *heap2;
+char *ziel_halbspeicher;
+char *quell_halbspeicher;
 ObjRef *static_data_area;
 // stackpointer
 unsigned int sp = 0;
@@ -18,12 +18,10 @@ int max_size = 0;
 
 ObjRef newCompoundObject(int objRefSize) {
     ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
-    int counter = 0;
     objRef->size = objRefSize | MSB;
 
-    do{
-        *((ObjRef *)objRef->data + counter++) = NULL;
-    } while(counter < GET_SIZE(objRef));
+    for(int i = 0; i < objRefSize; i++)
+        GET_REFS(objRef)[i] = NULL;
 
     return objRef;
 }
