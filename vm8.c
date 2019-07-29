@@ -676,6 +676,8 @@ int start_debug = 0;
 int bin = 0;
 int position = 0;
 
+ObjRef copyObjectToFreeMem(ObjRef orig);
+
 int argn(int n, char *argv[], char *str[], int max) {
 	int i = 0;
 	if(!strcmp(argv[n], str[i++])) {
@@ -892,8 +894,6 @@ ObjRef relocate(ObjRef orig) {
 }
 
 ObjRef copyObjectToFreeMem(ObjRef orig) {
-
-
     return orig;
 }
 /* Garbage Collector ends here */
