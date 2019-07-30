@@ -73,6 +73,12 @@
 // for instance read input
 #define MAX 		11
 
+// Macros for Garbage Collector
+#define BROKENHEART(objRef) (((objRef)->size & SBIT) == 1)
+#define FORWARDPOINTER(objRef) (((objRef)->size & ~(MSB | SBIT)))
+#define MSB (1 << (8 * sizeof(unsigned int) - 1))
+#define SBIT (1 <<(8* sizeof(unsigned int )- 2))
+
 // program memory
 unsigned int *ps;
 // break up program
@@ -108,6 +114,87 @@ static header_t buffer;
 
 int set_stack_size = 0;
 int set_heap_size = 0;
+unsigned int nextPointer = 0;
+
+ObjRef copyObjectToFreeMem(ObjRef orig) {
+    if(!BROKENHEART(orig)) {
+        if(IS_PRIM(orig)) {
+            memcpy(ziel_halbspeicher + nextPointer, orig, GET_SIZE(orig) + sizeof(unsigned int));
+            nextPointer += GET_SIZE(orig) + sizeof(unsigned int);
+        } else {
+            memcpy(ziel_halbspeicher + nextPointer, orig, sizeof(ObjRef) * GET_SIZE(orig) + sizeof(unsigned int));
+            nextPointer += sizeof(ObjRef) * (GET_SIZE(orig) + sizeof(unsigned int));
+        }
+    }
+
+    return orig;
+}
+
+ObjRef relocate(ObjRef orig) {
+    ObjRef copy;
+    if (orig == NULL) {
+
+        copy = NULL;
+    } else if (BROKENHEART(orig)) {
+
+        copy = (ObjRef) (ziel_halbspeicher + FORWARDPOINTER(orig)); // + (ObjRef heap??)
+    } else {
+
+        copy = copyObjectToFreeMem (orig );
+
+        orig->size = SBIT;
+        orig->size = ((char*)copy - ziel_halbspeicher) | SBIT;
+    }
+
+    return copy;
+}
+
+void garbagecollector() {
+    char* scan = 0;
+    char *temp;
+    temp = ziel_halbspeicher;
+    ziel_halbspeicher = quell_halbspeicher;
+    quell_halbspeicher = temp;
+    nextPointer = 0;
+
+    for(int i = 0; i < sp; i++)
+        if(stack[i].isObjRef)
+            stack[i].u.objRef = relocate(stack[i].u.objRef);
+
+    bip.op1 = relocate(bip.op1);
+    bip.op2 = relocate(bip.op2);
+    bip.res = relocate(bip.res);
+
+    r[1] = relocate(r[1]);
+
+    for(int j = 0; j < buffer.sda; j++)
+        static_data_area[j] = relocate(static_data_area[j]);
+
+    scan = ziel_halbspeicher;
+
+    while(scan != ziel_halbspeicher + nextPointer) {
+        if(!IS_PRIM((ObjRef) scan)) {
+            for(int k = 0; k < GET_SIZE((ObjRef) scan); k++)
+                GET_REFS((ObjRef) scan)[k] = relocate(GET_REFS((ObjRef) scan)[k]);
+
+            scan += GET_SIZE((ObjRef) scan) * 8 + sizeof(unsigned int);
+        } else
+            scan +=  (GET_SIZE((ObjRef) scan) + sizeof(unsigned int));
+    }
+}
+
+void *allocate(size_t size){
+    char *temp;
+    if(set_heap_size == 0)
+        set_heap_size = 8192 * 512;
+
+    temp = ziel_halbspeicher + nextPointer;
+    nextPointer += size;
+    if(temp >=  ziel_halbspeicher + set_heap_size) {
+        garbagecollector();
+    }
+    return temp;
+}
 
 void instruktion(int i) {
     switch(ps[i] >> 24) {
@@ -165,42 +252,50 @@ void exec(int ir) {
     // int value2 = 0;
     switch((ir >> 24)) {
         case HALT:
+            printf("Fehler halt\n");
             halt = 1; break;
         case PUSHC: // push value ir ^ (1 << 24)
+            printf("Fehler pushc\n");
             bigFromInt(SIGN_EXTEND(IMMEDIATE(ir)));
             pushObjRef(bip.res);
             break;
         case ADD:
+            printf("Fehler add\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             bigAdd();
             pushObjRef(bip.res);
             break;
         case SUB:
+            printf("Fehler sub\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             bigSub();
             pushObjRef(bip.res);
             break;
         case MUL:
+            printf("Fehler mul\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             bigMul();
             pushObjRef(bip.res);
             break;
         case DIV:
+            printf("Fehler div\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             bigDiv();
             pushObjRef(bip.res);
             break;
         case MOD:
+            printf("Fehler mod\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             bigDiv();
             pushObjRef(bip.rem);
             break;
         case RDINT: // scan return 1 if read value successfully
+            printf("Fehler rdint\n");
             if(scanf("%d", &value) == 1) {
                 bigFromInt(value);
                 pushObjRef(bip.res);
@@ -210,23 +305,29 @@ void exec(int ir) {
             }
             break;
         case WRINT:
+            printf("Fehler wrint\n");
             bip.op1 = popObjRef();
             bigPrint(stdout);
             break;
         case RDCHR:
+            printf("Fehler rdchr\n");
             value = getchar();
             bigFromInt(value);
             pushObjRef(bip.res);
             break;
         case WRCHR:
+            printf("Fehler wrchr\n");
             bip.op1 = popObjRef();
             printf("%c", bigToInt());
             break;
         case PUSHG:
+            printf("Fehler pushg\n");
             pushg(SIGN_EXTEND(IMMEDIATE(ir))); break;
         case POPG:
+            printf("Fehler popg\n");
             popg(SIGN_EXTEND(IMMEDIATE(ir))); break;
         case ASF:
+            printf("Fehler asf\n");
             pushNumber(fp);
             fp = sp;
             for(int i = 0; i < IMMEDIATE(ir); i++)
@@ -234,14 +335,18 @@ void exec(int ir) {
             //sp = sp + IMMEDIATE(ir);
             break;
         case RSF:
+            printf("Fehler rsf\n");
             sp = fp;
             fp = popNumber();
             break;
         case PUSHL:
+            printf("Fehler pushl\n");
             pushl(SIGN_EXTEND(IMMEDIATE(ir)) + fp); break;
         case POPL:
+            printf("Fehler popl\n");
             popl(fp+SIGN_EXTEND(IMMEDIATE(ir))); break;
         case EQ: // value1 == value2
+            printf("Fehler eq\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() == 0)
@@ -251,6 +356,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case NE: // value1 != value2
+            printf("Fehler ne\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() == 0)
@@ -260,6 +366,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case LT: // value1 < value2
+            printf("Fehler lt\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() < 0)
@@ -269,6 +376,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case LE: // value1 <= value2
+            printf("Fehler le\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() <= 0)
@@ -278,6 +386,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case GT: // value1 > value2
+            printf("Fehler gt\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() > 0)
@@ -287,6 +396,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case GE: // value1 >= value2
+            printf("Fehler ge\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
             if(bigCmp() >= 0)
@@ -295,25 +405,30 @@ void exec(int ir) {
                 bigFromInt(0);
             pushObjRef(bip.res);
             break;
-        case JMP: pc = IMMEDIATE(ir); break;
+        case JMP: printf("Fehler jmp\n"); pc = IMMEDIATE(ir); break;
         case BRF:
+            printf("Fehler brf\n");
             bip.op1 = popObjRef();
             if(bigToInt() == 0)
                 pc = IMMEDIATE(ir);
             break;
         case BRT:
+            printf("Fehler brt\n");
             bip.op1 = popObjRef();
             if(bigToInt() == 1)
                 pc = IMMEDIATE(ir);
             break;
         case CALL:
+            printf("Fehler call\n");
             pushNumber(pc);
             pc = IMMEDIATE(ir);
             break;
         case RET:
+            printf("Fehler ret\n");
             pc = popNumber();
             break;
         case DROP:
+            printf("Fehler drop\n");
             value = IMMEDIATE(ir);
             while(value > 0) {
                 popObjRef();
@@ -321,42 +436,52 @@ void exec(int ir) {
             }
             break;
         case PUSHR:
+            printf("Fehler pushr\n");
             pushObjRef(r[0]); break;
         case POPR:
+            printf("Fehler popr\n");
             r[0] = popObjRef(); break;
         case DUP:
+            printf("Fehler dup\n");
             bip.res = popObjRef();
             pushObjRef(bip.res);
             pushObjRef(bip.res);
             break;
         case NEW:
+            printf("Fehler new\n");
             pushObjRef(newCompoundObject(SIGN_EXTEND(IMMEDIATE(ir))));
             break;
         case GETF:
+            printf("Fehler getf\n");
             pushObjRef(GET_REFS(popObjRef())[SIGN_EXTEND(IMMEDIATE(ir))]);
             break;
         case PUTF:
+            printf("Fehler putf\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             GET_REFS(bip.op2)[SIGN_EXTEND(IMMEDIATE(ir))] = bip.op1;
             break;
         case NEWA:
+            printf("Fehler newa\n");
             bip.op1 = popObjRef();
             bip.op2 = newCompoundObject(bigToInt());
             pushObjRef(bip.op2);
             break;
         case GETFA:
+            printf("Fehler getfa\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             pushObjRef(GET_REFS(bip.op2)[bigToInt()]);
             break;
         case PUTFA:
+            printf("Fehler putfa\n");
             bip.res = popObjRef();
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             GET_REFS(bip.op2)[bigToInt()] = bip.res;
             break;
         case GETSZ:
+            printf("Fehler getsz\n");
             bip.op1 = popObjRef();
             if(IS_PRIM(bip.op1))
                 bigFromInt(-1);
@@ -365,9 +490,11 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case PUSHN:
+            printf("Fehler pushn\n");
             pushObjRef(NULL);
             break;
         case REFEQ:
+            printf("Fehler refeq\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             if(bip.op2 == bip.op1)
@@ -377,6 +504,7 @@ void exec(int ir) {
             pushObjRef(bip.res);
             break;
         case REFNE:
+            printf("Fehler refne\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
             if(bip.op2 != bip.op1)
@@ -397,7 +525,8 @@ void memory_is_full(void *x) {
 }
 
 void load_data(char file[]) {
-    r = malloc(sizeof(ObjRef));
+    r = allocate(sizeof(ObjRef));
+    memory_is_full(r);
 
     /*create file pointer*/
     FILE *fp;
@@ -428,7 +557,7 @@ void load_data(char file[]) {
 
         // allocatre memory for Static Data Area
         // warum sizeof(static_data_area) = 8 anstatt 108?
-        static_data_area = malloc(buffer.sda * sizeof(ObjRef));
+        static_data_area = allocate(buffer.sda * sizeof(ObjRef));
         memory_is_full(static_data_area);
         /*if(static_data_area == NULL) {
             printf("memory is full.");
@@ -437,7 +566,7 @@ void load_data(char file[]) {
 
         // allocate memory program memory
         // warum sizeof(ps) = 8 anstatt 108?
-        ps = malloc(buffer.noi * sizeof(int));
+        ps = allocate(buffer.noi * sizeof(int));
         memory_is_full(ps);
         /*if(ps == NULL) {
             printf("memory is full.");
@@ -676,10 +805,14 @@ int start_debug = 0;
 int bin = 0;
 int position = 0;
 
-int argn(int n, char *argv[], char *str[], int last_argument) {
+ObjRef copyObjectToFreeMem(ObjRef orig);
+
+void garbagecollector();
+
+int argn(int n, char *argv[], char *str[], int max) {
     int i = 0;
     if(!strcmp(argv[n], str[i++])) {
-        if(n == last_argument) {
+        if(n == max) {
             printf("Error: stack size is missing\n");
             exit(0);
         } else if(atoi(argv[n+1]) > 0) {
@@ -690,7 +823,7 @@ int argn(int n, char *argv[], char *str[], int last_argument) {
             exit(0);
         }
     } else if(!strcmp(argv[n], str[i++]))
-        if(n == last_argument) {
+        if(n == max) {
             printf("Error: heap size is missing\n");
             exit(0);
         } else if(atoi(argv[n+1]) > 0) {
@@ -733,25 +866,41 @@ int argn(int n, char *argv[], char *str[], int last_argument) {
 
 void start(char *argv) {
     if(set_stack_size > 0) {
+        printf("stack1\n");
         stack = malloc(set_stack_size * 1024);
+        printf("stack2\n");
         max_size = 64 * 1024 / sizeof(Stackslot);
         memory_is_full(stack);
+        printf("stack3\n");
     } else {
+        printf("stack4\n");
         stack = malloc(64 * 1024);
+        printf("stack5\n");
         max_size = 64 * 1024 / sizeof(Stackslot);
         memory_is_full(stack);
+        printf("stack6\n");
     }
 
     if(set_heap_size > 0) {
-        heap1 = malloc(set_heap_size * 512);
-        memory_is_full(heap1);
-        heap2 = malloc(set_heap_size * 512);
-        memory_is_full(heap2);
+        printf("heap1\n");
+        ziel_halbspeicher = malloc(set_heap_size * 512);
+        printf("heap2\n");
+        memory_is_full(ziel_halbspeicher);
+        printf("heap3\n");
+        quell_halbspeicher = malloc(set_heap_size * 512);
+        printf("heap4\n");
+        memory_is_full(quell_halbspeicher);
+        printf("heap5\n");
     } else {
-        heap1 = malloc(8192 * 512);
-        memory_is_full(heap1);
-        heap2 = malloc(8192 * 512);
-        memory_is_full(heap2);
+        printf("heap6\n");
+        ziel_halbspeicher = malloc(8192 * 512);
+        printf("heap7\n");
+        memory_is_full(ziel_halbspeicher);
+        printf("heap8\n");
+        quell_halbspeicher = malloc(8192 * 512);
+        printf("heap9\n");
+        memory_is_full(quell_halbspeicher);
+        printf("heap10\n");
     }
 
     if(start_debug && bin == 1) {
@@ -771,6 +920,7 @@ void start(char *argv) {
         // start program
         step = 0;
         switcher = 0;
+        printf("vor run\n");
         run();
 
         // release memory from ps
@@ -782,70 +932,6 @@ void start(char *argv) {
 }
 
 int main(int argc, char *argv[]) {
-
-    /*if(argc == 1)
-        printf("Error: no code file specified\n");
-    else if(argc == 2) {
-        if(f(1, argv) == 1)
-            ;
-        else if(strcmp(argv[1], "--debug") == 0)
-            printf("Error: no code file specified\n");
-        else {
-            load_data(argv[1]);
-
-            printf("Ninja Virtual Machine started\n");
-
-            // start program
-            step = 0;
-            switcher = 0;
-            run();
-
-            // release memory from ps
-            free(ps);
-
-            // release memory from static_data_area
-            free(static_data_area);
-        }
-    } else if(argc == 3) {
-        if(f(1, argv) == 1)
-            ;
-        else if(f(2, argv) == 1)
-            ;
-        else if(strcmp(argv[1], "--debug") == 0) {
-            if(f(2, argv) == 0) {
-                load_data(argv[2]);
-                printf("DEBUG: file '%s' loaded (code size = ", argv[2]);
-                printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
-                printf("Ninja Virtual Machine started\n");
-                while(!halt) {
-                    debug();
-                }
-            }
-        } else if(strcmp(argv[2], "--debug") == 0) {
-            if(f(1, argv) == 0) {
-                load_data(argv[1]);
-                printf("DEBUG: file '%s' loaded (code size = ", argv[2]);
-                printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
-                printf("Ninja Virtual Machine started\n");
-                while(!halt) {
-                    debug();
-                }
-            }
-        } else
-            printf("Error: more than one code file specified\n");
-    } else if(argc > 3) {
-        if(f(1, argv) == 1)
-            ;
-        else if(f(2, argv) == 1)
-            ;
-        else if(strcmp(argv[1], "--debug") == 0 || strcmp(argv[2], "--debug") == 0) {
-            if(f(3, argv) == 0)
-                printf("Error: more than one code file specified\n");
-        } else
-            printf("Error: more than one code file specified\n");
-
-    }*/
-
     char *str[5];
     str[0] = "--stack";
     str[1] = "--heap";
@@ -871,3 +957,7 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
+// ToDo
+/* Garbage Collector starts here */
+
+
