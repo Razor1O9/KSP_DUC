@@ -22,15 +22,12 @@ typedef struct {
 } Stackslot;
 
 extern Stackslot *stack;
-extern char *ziel_halbspeicher;
-extern char *quell_halbspeicher;
 extern ObjRef *static_data_area;
 extern unsigned int sp;
 extern unsigned int fp;
 extern ObjRef *r;
 extern int max_size;
 extern char *heap;
-extern unsigned  int nextPointer;
 
 int is_objRef(int);
 void pushNumber(int);
@@ -41,7 +38,6 @@ void pushl(int);
 void popl(int);
 void pushg(int);
 void popg(int);
-void *allocate(size_t size);
 
 ObjRef newCompoundObject(int numObjRefs);
 
