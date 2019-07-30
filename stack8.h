@@ -29,6 +29,8 @@ extern unsigned int sp;
 extern unsigned int fp;
 extern ObjRef *r;
 extern int max_size;
+extern char *heap;
+extern unsigned  int nextPointer;
 
 int is_objRef(int);
 void pushNumber(int);
