@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <bigint.h>
+#include <Aufgabe_7/bigint/build/include/support.h>
 #include "stack8.h"
 
 #define IMMEDIATE(x) ((x) & 0x00FFFFFF)
@@ -72,6 +73,12 @@
 
 // for instance read input
 #define MAX 		11
+
+// Macros for Garbage Collector
+#define BROKENHEART(objRef) (((objRef)->size & SBIT) == 1)
+#define FORWARDPOINTER(objRef) (((objRef)->size & ~(MSB | SBIT)))
+#define MSB (1 << (8 * sizeof(unsigned int) - 1))
+#define SBIT (1 <<(8* sizeof(unsigned int )- 2))
 
 // program memory
 unsigned int *ps;
@@ -784,69 +791,6 @@ void start(char *argv) {
 }
 
 int main(int argc, char *argv[]) {
-
-	/*if(argc == 1)
-		printf("Error: no code file specified\n");
-	else if(argc == 2) {
-		if(f(1, argv) == 1)
-			;
-		else if(strcmp(argv[1], "--debug") == 0)
-			printf("Error: no code file specified\n");
-		else {
-			load_data(argv[1]);
-
-			printf("Ninja Virtual Machine started\n");
-
-			// start program
-			step = 0;
-			switcher = 0;
-			run();
-
-			// release memory from ps
-			free(ps);
-
-			// release memory from static_data_area
-			free(static_data_area);
-		}
-	} else if(argc == 3) {
-		if(f(1, argv) == 1)
-			;
-		else if(f(2, argv) == 1)
-			;
-		else if(strcmp(argv[1], "--debug") == 0) {
-			if(f(2, argv) == 0) {
-				load_data(argv[2]);
-				printf("DEBUG: file '%s' loaded (code size = ", argv[2]);
-				printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
-				printf("Ninja Virtual Machine started\n");
-				while(!halt) {
-					debug();
-				}
-			}
-		} else if(strcmp(argv[2], "--debug") == 0) {
-			if(f(1, argv) == 0) {
-				load_data(argv[1]);
-				printf("DEBUG: file '%s' loaded (code size = ", argv[2]);
-				printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
-				printf("Ninja Virtual Machine started\n");
-				while(!halt) {
-					debug();
-				}
-			}
-		} else
-			printf("Error: more than one code file specified\n");
-	} else if(argc > 3) {
-		if(f(1, argv) == 1)
-			;
-		else if(f(2, argv) == 1)
-			;
-		else if(strcmp(argv[1], "--debug") == 0 || strcmp(argv[2], "--debug") == 0) {
-			if(f(3, argv) == 0)
-				printf("Error: more than one code file specified\n");
-		} else
-			printf("Error: more than one code file specified\n");
-
-	}*/
 	char *str[5];
 	str[0] = "--stack";
 	str[1] = "--heap";
@@ -879,7 +823,7 @@ ObjRef relocate(ObjRef orig) {
     if (orig == NULL) {
 /* relocate(nil) = nil */
         copy = NULL;
-    } else if (orig -> brokenHeart ) {
+    } else if (orig -> data == BROKENHEART ) {
 /* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
         copy = orig -> forwardPointer ;
     } else {
