@@ -154,13 +154,24 @@ ObjRef relocate(ObjRef orig) {
 }
 
 void garbagecollector() {
-    char* scan = 0;
+    char* scan;
     char *temp;
     temp = ziel_halbspeicher;
     ziel_halbspeicher = quell_halbspeicher;
     quell_halbspeicher = temp;
     nextPointer = 0;
-    printf("sp = %d\n", sp);
+    char* scan;
+    char *temp;
+    temp = ziel_halbspeicher;
+    ziel_halbspeicher = quell_halbspeicher;
+    quell_halbspeicher = temp;
+    nextPointer = 0;
+
+    for(int j = 0; j < buffer.sda; j++)
+        static_data_area[j] = relocate(static_data_area[j]);
+
+    r[1] = relocate(r[1]);
+
     for(int i = 0; i < sp; i++)
         if(stack[i].isObjRef)
             stack[i].u.objRef = relocate(stack[i].u.objRef);
@@ -168,11 +179,7 @@ void garbagecollector() {
     bip.op1 = relocate(bip.op1);
     bip.op2 = relocate(bip.op2);
     bip.res = relocate(bip.res);
-
-    r[1] = relocate(r[1]);
-    printf("buffer.sda = %d\n", buffer.sda);
-    for(int j = 0; j < buffer.sda; j++)
-        static_data_area[j] = relocate(static_data_area[j]);
+    bip.rem = relocate(bip.res);
 
     scan = ziel_halbspeicher;
 
@@ -180,11 +187,10 @@ void garbagecollector() {
         if(!IS_PRIM((ObjRef) scan)) {
             for(int k = 0; k < GET_SIZE((ObjRef) scan); k++)
                 GET_REFS((ObjRef) scan)[k] = relocate(GET_REFS((ObjRef) scan)[k]);
-
-            scan += GET_SIZE((ObjRef) scan) * 8 + sizeof(unsigned int);
-        } else
-            scan +=  (GET_SIZE((ObjRef) scan) + sizeof(unsigned int));
+        }
+        scan +=  (GET_SIZE((ObjRef) scan) + sizeof(unsigned int));
     }
+    printf("nach while\n");
 }
 
 void *allocate(size_t size){
