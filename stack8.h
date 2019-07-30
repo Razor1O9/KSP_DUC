@@ -37,6 +37,7 @@ extern int max_size;
 extern char *heap;
 extern unsigned  int nextPointer;
 
+void *allocate(size_t size);
 int is_objRef(int);
 void pushNumber(int);
 int popNumber(void);

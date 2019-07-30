@@ -21,8 +21,60 @@ ObjRef copyObjectToFreeMem(ObjRef orig);
 
 void garbagecollector();
 
+// ToDo
+/* Garbage Collector starts here */
+ObjRef relocate(ObjRef orig) {
+    ObjRef copy;
+    if (orig == NULL) {
+/* relocate(nil) = nil */
+        copy = NULL;
+    } else if (BROKENHEART(orig)) {
+/* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
+        copy = FORWARDPOINTER(orig); // + (ObjRef heap??)
+    } else {
+/* Objekt muss noch kopiert werden */
+        copy = copyObjectToFreeMem (orig );
+/* im Original: setze Broken -Heart -Flag und Forward -Pointer */
+        orig -> size = SBIT;
+        orig -> size = ((char*)copy - heap | SBIT);
+    }
+/* Adresse des kopierten Objektes zurück */
+    return copy;
+}
+
+ObjRef copyObjectToFreeMem(ObjRef orig) {
+
+    if (!BROKENHEART(orig)) {
+        if (IS_PRIM(orig)) {
+            memcpy(heap + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
+            nextPointer = (GET_SIZE(orig) + sizeof(unsigned int) + nextPointer);
+        } else {
+            memcpy(heap + nextPointer, orig, (sizeof(ObjRef)*GET_SIZE(orig) + sizeof(unsigned int)));
+            nextPointer = (nextPointer + sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
+        }
+    }
+    return orig;
+}
+// ToDo replace all malloc (except heap and stack) with allocate
+void *allocate(size_t size){
+    unsigned int halfheapsize;
+    char *temp_heap;
+    temp_heap = heap + nextPointer;
+    nextPointer += size;
+    if(temp_heap >=  heap + halfheapsize){
+        garbagecollector();
+    }
+    return temp_heap;
+}
+
+void garbagecollector() {
+
+}
+/* Garbage Collector ends here */
+
 ObjRef newCompoundObject(int objRefSize) {
-    ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+    //ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+    ObjRef objRef = allocate(objRefSize * sizeof(ObjRef) + sizeof(unsigned int));
     objRef->size = objRefSize | MSB;
 
     for(int i = 0; i < objRefSize; i++)
@@ -103,53 +155,3 @@ void pushg(int location) {
 void popg(int location) {
 	static_data_area[location] = popObjRef();
 }
-// ToDo
-/* Garbage Collector starts here */
-ObjRef relocate(ObjRef orig) {
-    ObjRef copy;
-    if (orig == NULL) {
-/* relocate(nil) = nil */
-        copy = NULL;
-    } else if (BROKENHEART(orig)) {
-/* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
-        copy = FORWARDPOINTER(orig); // + (ObjRef heap??)
-    } else {
-/* Objekt muss noch kopiert werden */
-        copy = copyObjectToFreeMem (orig );
-/* im Original: setze Broken -Heart -Flag und Forward -Pointer */
-        orig -> size = SBIT;
-        orig -> size = ((char*)copy - heap | SBIT);
-    }
-/* Adresse des kopierten Objektes zurück */
-    return copy;
-}
-
-ObjRef copyObjectToFreeMem(ObjRef orig) {
-
-    if (!BROKENHEART(orig)) {
-        if (IS_PRIM(orig)) {
-            memcpy(heap + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
-            nextPointer = (GET_SIZE(orig) + sizeof(unsigned int) + nextPointer);
-        } else {
-            memcpy(heap + nextPointer, orig, (sizeof(ObjRef)*GET_SIZE(orig) + sizeof(unsigned int)));
-            nextPointer = (nextPointer + sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
-        }
-    }
-    return orig;
-}
-// ToDo replace all malloc (except heap and stack) with allocate
-void *allocate(size_t size){
-    unsigned int halfheapsize;
-    char *temp_heap;
-    temp_heap = heap + nextPointer;
-    nextPointer += size;
-    if(temp_heap >=  heap + halfheapsize){
-        garbagecollector();
-    }
-    return temp_heap;
-}
-
-void garbagecollector() {
-
-}
-/* Garbage Collector ends here */
