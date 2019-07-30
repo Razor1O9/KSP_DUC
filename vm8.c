@@ -821,20 +821,17 @@ int start_debug = 0;
 int bin = 0;
 int position = 0;
 
-int bigNumberArgument(char *argv) {
-    bigFromInt(atoi(argv));
-    bip.op1 = bip.res;
-    return bigToInt();
-}
-
 int argn(int n, char *argv[], char *str[], int max) {
     int i = 0;
     if(!strcmp(argv[n], str[i++])) {
         if(n == max) {
             printf("Error: stack size is missing\n");
             exit(0);
-        } else if(bigNumberArgument(argv[n+1]) > 0) {
-            set_stack_size = atoi(argv[n+1]);
+        } else if(atoi(argv[n+1]) != 0) {
+            if(atoi(argv[n+1]) < 0)
+                ;
+            else
+                set_stack_size = atoi(argv[n+1]);
             counter++;
         } else {
             printf("Error: illegal stack size\n");
@@ -844,8 +841,11 @@ int argn(int n, char *argv[], char *str[], int max) {
         if(n == max) {
             printf("Error: heap size is missing\n");
             exit(0);
-        } else if(bigNumberArgument(argv[n+1]) > 0) {
-            set_heap_size = atoi(argv[n+1]);
+        } else if(atoi(argv[n+1]) != 0) {
+            if(atoi(argv[n+1]) < 0)
+                ;
+            else
+                set_heap_size = atoi(argv[n+1]);
             counter++;
         } else {
             printf("Error: illegal heap size\n");
