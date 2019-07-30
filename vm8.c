@@ -74,12 +74,6 @@
 // for instance read input
 #define MAX 		11
 
-// Macros for Garbage Collector
-#define BROKENHEART(objRef) (((objRef)->size & SBIT) == 1)
-#define FORWARDPOINTER(objRef) (((objRef)->size & ~(MSB | SBIT)))
-#define MSB (1 << (8 * sizeof(unsigned int) - 1))
-#define SBIT (1 <<(8* sizeof(unsigned int )- 2))
-
 // program memory
 unsigned int *ps;
 // break up program
@@ -683,10 +677,6 @@ int start_debug = 0;
 int bin = 0;
 int position = 0;
 
-ObjRef copyObjectToFreeMem(ObjRef orig);
-
-void garbagecollector();
-
 int argn(int n, char *argv[], char *str[], int max) {
 	int i = 0;
 	if(!strcmp(argv[n], str[i++])) {
@@ -818,53 +808,3 @@ int main(int argc, char *argv[]) {
 	}
 	return 0;
 }
-// ToDo
-/* Garbage Collector starts here */
-ObjRef relocate(ObjRef orig) {
-    ObjRef copy;
-    if (orig == NULL) {
-/* relocate(nil) = nil */
-        copy = NULL;
-    } else if (BROKENHEART(orig)) {
-/* Objekt ist bereits kopiert , Forward -Pointer gesetzt */
-        copy = FORWARDPOINTER(orig); // + (ObjRef heap??)
-    } else {
-/* Objekt muss noch kopiert werden */
-        copy = copyObjectToFreeMem (orig );
-/* im Original: setze Broken -Heart -Flag und Forward -Pointer */
-        orig -> size = SBIT;
-        orig -> size = ((char*)copy - heap | SBIT);
-    }
-/* Adresse des kopierten Objektes zurück */
-    return copy;
-}
-
-ObjRef copyObjectToFreeMem(ObjRef orig) {
-
-    if (!BROKENHEART(orig)) {
-        if (IS_PRIM(orig)) {
-            memcpy(heap + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
-            nextPointer = (GET_SIZE(orig) + sizeof(unsigned int) + nextPointer);
-        } else {
-            memcpy(heap + nextPointer, orig, (sizeof(ObjRef)*GET_SIZE(orig) + sizeof(unsigned int)));
-            nextPointer = (nextPointer + sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
-        }
-    }
-    return orig;
-}
-// ToDo replace all malloc (except heap and stack) with allocate
-void *allocate(size_t size){
-    unsigned int halfheapsize;
-    char *temp_heap;
-    temp_heap = heap + nextPointer;
-    nextPointer += size;
-    if(temp_heap >=  heap + halfheapsize){
-        garbagecollector();
-    }
-    return temp_heap;
-}
-
-void garbagecollector() {
-
-}
-/* Garbage Collector ends here */

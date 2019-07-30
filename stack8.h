@@ -12,6 +12,11 @@
 #define GET_SIZE(objRef) ((objRef)->size & ~MSB)
 //calculate a pointer on the first objectrefernce of object
 #define GET_REFS(objRef) ((ObjRef *)(objRef)->data)
+// Macros for Garbage Collector
+#define BROKENHEART(objRef) (((objRef)->size & SBIT) == 1)
+#define FORWARDPOINTER(objRef) (((objRef)->size & ~(MSB | SBIT)))
+#define MSB (1 << (8 * sizeof(unsigned int) - 1))
+#define SBIT (1 <<(8* sizeof(unsigned int )- 2))
 
 typedef struct {
 	unsigned int isObjRef;
