@@ -1,47 +1,100 @@
-/*Datei stack.h*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "stack8.h"
 
-#ifndef STACK_H
-#define STACK_H
+Stackslot *stack;
+char *ziel_halbspeicher;
+char *quell_halbspeicher;
+ObjRef *static_data_area;
+// stackpointer
+unsigned int sp = 0;
+// framepointer
+unsigned int fp = 0;
+// ask for funktion with arguments and return value!
+// instruktion popr save in stack or r?
+// return register
+ObjRef *r;
+int max_size = 0;
 
-#include <support.h>
+ObjRef newCompoundObject(int objRefSize) {
+    ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+    objRef->size = objRefSize | MSB;
 
-//is this object a primitive object?
-#define MSB		(1 << (8 * sizeof(unsigned int) - 1))
-#define IS_PRIM(objRef) (((objRef)->size & MSB) == 0)
-//How many objectrefernce are in this Object
-#define GET_SIZE(objRef) ((objRef)->size & ~MSB)
-//calculate a pointer on the first objectrefernce of object
-#define GET_REFS(objRef) ((ObjRef *)(objRef)->data)
+    for(int i = 0; i < objRefSize; i++)
+        GET_REFS(objRef)[i] = NULL;
 
-typedef struct {
-    unsigned int isObjRef;
-    union {
-        ObjRef objRef;
-        int number;
-    } u;
-} Stackslot;
+    return objRef;
+}
 
-extern Stackslot *stack;
-extern char *ziel_halbspeicher;
-extern char *quell_halbspeicher;
-extern ObjRef *static_data_area;
-extern unsigned int sp;
-extern unsigned int fp;
-extern ObjRef *r;
-extern int max_size;
-extern char *heap;
-extern unsigned  int nextPointer;
+int is_objRef(int i) {
+    if(stack[i].isObjRef)
+        return 1;
+    return 0;
+}
 
-int is_objRef(int);
-void pushNumber(int);
-int popNumber(void);
-void pushObjRef(ObjRef x);
-ObjRef popObjRef(void);
-void pushl(int);
-void popl(int);
-void pushg(int);
-void popg(int);
+void pushNumber(int x) {
+    if(sp >= max_size) {
+        printf("stackoverflow.\n");
+        exit(1);
+    } else {
+        stack[sp].isObjRef = 0;
+        stack[sp].u.number = x;
+        sp++;
+    }
+}
 
-ObjRef newCompoundObject(int numObjRefs);
+int popNumber(void) {
+    int pop_wert = stack[sp-1].u.number;
+    if(sp < 0) {
+        printf("Stackunderflow.\n");
+        exit(1);
+    } else {
+        sp--;
+        stack[sp].u.number = 0;
+        stack[sp].u.objRef = NULL;
+    }
+    return pop_wert;
+}
 
-#endif
+void pushObjRef(ObjRef x) {
+    if(sp >= max_size) {
+        printf("stackoverflow.\n");
+        exit(1);
+    } else {
+        stack[sp].isObjRef = 1;
+        stack[sp].u.objRef = x;
+        sp++;
+    }
+}
+
+ObjRef popObjRef(void) {
+    ObjRef o = stack[sp-1].u.objRef;
+    if(sp < 0) {
+        printf("Stackunderflow.\n");
+        exit(1);
+    } else {
+        sp--;
+        stack[sp].u.objRef = NULL;
+    }
+    return o;
+}
+
+// push local variable
+void pushl(int location) {
+    pushObjRef(stack[location].u.objRef);
+}
+
+// pop local variable
+void popl(int location) {
+    stack[location].u.objRef = popObjRef();
+}
+
+// push global variable
+void pushg(int location) {
+    pushObjRef(static_data_area[location]);
+}
+
+// pop global variable
+void popg(int location) {
+    static_data_area[location] = popObjRef();
+}
