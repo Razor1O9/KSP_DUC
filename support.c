@@ -7,8 +7,8 @@
 #include <stdlib.h>
 
 #include "support.h"
-#include "stack8.h"
 
+#include "vm.h"
 
 /*
  * This routine is called in case a fatal error has occurred.
@@ -35,8 +35,8 @@ void fatalError(char *msg) {
 ObjRef newPrimObject(int dataSize) {
     ObjRef objRef;
 
-    objRef = allocate(sizeof(unsigned int) +
-                      dataSize * sizeof(unsigned char));
+    objRef = malloc(sizeof(unsigned int) +
+                    dataSize * sizeof(unsigned char));
     if (objRef == NULL) {
         fatalError("newPrimObject() got no memory");
     }
