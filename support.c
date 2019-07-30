@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "support.h"
+#include "stack8.h"
 
 
 /*
