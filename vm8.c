@@ -200,10 +200,8 @@ void *allocate(size_t size){
     temp = ziel_halbspeicher + nextPointer;
 
     if(temp >=  ziel_halbspeicher + x) {
-        if(temp >= (quell_halbspeicher + x + x)) {
-            printf("Error: heap overflow\n");
-            exit(1);
-        }
+        if(nextPointer >= x)
+            return temp = NULL;
         garbagecollector();
     }
     return temp;
@@ -532,7 +530,7 @@ void exec(int ir) {
 
 void memory_is_full(void *x) {
     if(x == NULL) {
-        printf("memory is full.\n");
+        printf("Error: heap overflow\n");
         exit(1);
     }
 }
