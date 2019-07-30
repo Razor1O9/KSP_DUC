@@ -88,7 +88,7 @@ static int halt = 0;
 // program counter
 static int pc = 0;
 // current instruktion in debug mode
-static unsigned int index = 0;
+static unsigned int debugCounter = 0;
 // set breakpoint in debug mode
 static int breakpoint = -1;
 // next instruktion in debug mode
@@ -584,12 +584,12 @@ void run(void) {
 	int ir = 0;
 	while(!halt) {
 		if(pc == breakpoint) {
-			index = pc;
+            debugCounter = pc;
 			return;
 		} else
 
 		if(step) {
-			index = pc;
+            debugCounter = pc;
 			return;
 		}
 
@@ -609,7 +609,7 @@ void debug(void) {
 	char x[6] = "";
 	unsigned int option = 0;
 
-	instruktion(index);
+	instruktion(debugCounter);
 	printf("DEBUG: inspect, list, breakpoint, step, run, quit?\n");
 
 	read_line(input);
