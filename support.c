@@ -7,8 +7,7 @@
 #include <stdlib.h>
 
 #include "bigint/build/include/support.h"
-
-#include "vm.h"
+#include "stack8.h"
 
 /*
  * This routine is called in case a fatal error has occurred.

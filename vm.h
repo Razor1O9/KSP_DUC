@@ -7,7 +7,5 @@ extern char *ziel_halbspeicher;
 extern char *quell_halbspeicher;
 extern unsigned  int nextPointer;
 
-void *allocate(size_t);
-
 #endif
 
