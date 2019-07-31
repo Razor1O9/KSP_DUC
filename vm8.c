@@ -541,16 +541,16 @@ void load_data(char file[]) {
     memory_is_full(r);
 
     /*create file pointer*/
-    FILE *fp;
+    FILE *f;
 
     /*open file*/
-    fp = fopen(file, "r");
-    if(fp == NULL) {
+    f = fopen(file, "r");
+    if(f == NULL) {
         printf("Error: cannot open code file '%s'\n", file);
         exit(1);
     } else {
-        // read header of the file fp
-        if(fread(&buffer, sizeof(header_t), 1, fp) != 1) {
+        // read header of the file f
+        if(fread(&buffer, sizeof(header_t), 1, f) != 1) {
             printf("Error: reading\n");
             exit(1);
         }
@@ -590,13 +590,13 @@ void load_data(char file[]) {
         }*/
 
         // read Instruktionen
-        if(fread(ps, sizeof(int), buffer.noi, fp) != buffer.noi) {
+        if(fread(ps, sizeof(int), buffer.noi, f) != buffer.noi) {
             printf("Error: reading\n");
             exit(1);
         }
 
         /*close file*/
-        fclose(fp);
+        fclose(f);
     }
 }
 
