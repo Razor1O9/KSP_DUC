@@ -200,8 +200,10 @@ void *allocate(size_t size){
     temp = ziel_halbspeicher + nextPointer;
 
     if(temp >=  ziel_halbspeicher + x) {
-        if(nextPointer >= x)
-            return temp = NULL;
+        if(nextPointer >= x) {
+            temp = NULL;
+            return temp;
+        }
         garbagecollector();
     }
     return temp;
