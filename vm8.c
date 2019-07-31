@@ -7,43 +7,43 @@
 #define IMMEDIATE(x) ((x) & 0x00FFFFFF)
 #define SIGN_EXTEND(i) ((i) & 0x00800000 ? (i) | 0xFF000000 : (i))
 
-#define HALT        0
-#define PUSHC        1
-#define ADD        2
-#define SUB        3
-#define MUL        4
-#define DIV        5
-#define MOD        6
-#define RDINT        7
-#define WRINT        8
-#define RDCHR        9
-#define WRCHR        10
+#define HALT		0
+#define PUSHC		1
+#define ADD 		2
+#define SUB 		3
+#define MUL 		4
+#define DIV 		5
+#define MOD 		6
+#define RDINT		7
+#define WRINT 		8
+#define RDCHR 		9
+#define WRCHR		10
 
-#define PUSHG        11
-#define POPG        12
-#define ASF        13
-#define RSF        14
-#define PUSHL        15
-#define POPL        16
+#define PUSHG		11
+#define POPG 		12
+#define ASF		13
+#define RSF		14
+#define PUSHL		15
+#define POPL		16
 
-#define EQ        17
-#define NE        18
-#define LT        19
-#define LE        20
-#define GT        21
-#define GE        22
+#define EQ      	17
+#define NE      	18
+#define LT      	19
+#define LE      	20
+#define GT      	21
+#define GE      	22
 
-#define JMP        23
-#define BRF        24
-#define BRT        25
+#define JMP     	23
+#define BRF     	24
+#define BRT     	25
 
-#define CALL        26
-#define RET        27
-#define DROP        28
-#define PUSHR        29
-#define POPR        30
+#define CALL		26
+#define RET		27
+#define DROP		28
+#define PUSHR		29
+#define POPR		30
 
-#define DUP        31
+#define DUP		31
 
 #define NEW             32
 #define GETF            33
@@ -60,18 +60,18 @@
 #define REFNE           41
 
 /*the current version of VM*/
-#define VERSION    8
+#define VERSION 	8
 
 // DEBUG-option
-#define INSPECT        1
-#define LIST        2
-#define BREAKPOINT    3
-#define STEP        4
-#define RUN        5
-#define QUIT        6
+#define INSPECT		1
+#define LIST		2
+#define BREAKPOINT	3
+#define STEP		4
+#define RUN		5
+#define QUIT		6
 
 // for instance read input
-#define MAX        11
+#define MAX 		11
 
 // Macros for Garbage Collector
 #define BROKENHEART(objRef) (((objRef)->size & SBIT) == 1)
@@ -112,23 +112,25 @@ typedef struct {
 
 static header_t buffer;
 
-char *heap;
-char *heap2;
+char *ziel_halbspeicher;
+char *quell_halbspeicher;
 
 int set_stack_size = 0;
 int set_heap_size = 0;
 unsigned int nextPointer = 0;
 
 ObjRef copyObjectToFreeMem(ObjRef orig) {
-    if (!BROKENHEART(orig)) {
-        if (IS_PRIM(orig)) {
-            memcpy(heap + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
-            nextPointer += (GET_SIZE(orig) + sizeof(unsigned int));
+    printf("copy\n");
+    if(!BROKENHEART(orig)) {
+        if(IS_PRIM(orig)) {
+            memcpy(ziel_halbspeicher + nextPointer, orig, GET_SIZE(orig) + sizeof(unsigned int));
+            nextPointer += GET_SIZE(orig) + sizeof(unsigned int);
         } else {
-            memcpy(heap + nextPointer, orig, (sizeof(ObjRef) * (GET_SIZE(orig) + sizeof(unsigned int))));
-            nextPointer += (sizeof(ObjRef) * (GET_SIZE(orig) + sizeof(unsigned int)));
+            memcpy(ziel_halbspeicher + nextPointer, orig, sizeof(ObjRef) * GET_SIZE(orig) + sizeof(unsigned int));
+            nextPointer += sizeof(ObjRef) * (GET_SIZE(orig) + sizeof(unsigned int));
         }
     }
+
     return orig;
 }
 
@@ -136,194 +138,114 @@ ObjRef relocate(ObjRef orig) {
     ObjRef copy;
     if (orig == NULL) {
         copy = NULL;
+        printf("re\n");
     } else if (BROKENHEART(orig)) {
-        copy = (ObjRef) (heap + FORWARDPOINTER(orig));
+        printf("re1\n");
+        copy = (ObjRef) (ziel_halbspeicher + FORWARDPOINTER(orig)); // + (ObjRef heap??)
     } else {
-        copy = copyObjectToFreeMem(orig);
+        printf("re2\n");
+        copy = copyObjectToFreeMem (orig );
+
         orig->size = SBIT;
-        orig->size = ((char *) copy - heap) | SBIT;
+        orig->size = ((char*)copy - ziel_halbspeicher) | SBIT;
     }
+    printf("re3\n");
     return copy;
 }
 
 void garbagecollector() {
-    char *scan = 0;
-    int i = 0;
-    int k = 0;
-    int j = 0;
-    char *temp_heap;
-    temp_heap = heap;
-    heap = heap2;
-    heap2 = temp_heap;
+    printf("print");
+    char* scan;
+    char *temp;
+    temp = ziel_halbspeicher;
+    ziel_halbspeicher = quell_halbspeicher;
+    quell_halbspeicher = temp;
     nextPointer = 0;
-    for (i = 0; i < sp; i++) {
-        if (stack[i].isObjRef) {
-            stack[i].u.objRef = relocate(stack[i].u.objRef);
-        }
-    }
+
+    for(int j = 0; j < buffer.sda; j++)
+        static_data_area[j] = relocate(static_data_area[j]);
+
     bip.op1 = relocate(bip.op1);
     bip.op2 = relocate(bip.op2);
     bip.res = relocate(bip.res);
-    r[1] = relocate(r[1]);
-    for (j = 0; j < buffer.sda; j++) {
-        static_data_area[j] = relocate(static_data_area[j]);
-    }
-    scan = heap;
-    while (scan != heap + nextPointer) {
-/* es gibt noch Objekte, die gescannt werden müssen */
+    bip.rem = relocate(bip.res);
+
+    r[0] = relocate(r[0]);
+
+    for(int i = 0; i < sp; i++)
+        if(stack[i].isObjRef)
+            stack[i].u.objRef = relocate(stack[i].u.objRef);
+
+    scan = ziel_halbspeicher;
+
+    while(scan != ziel_halbspeicher + nextPointer) {
         if (!IS_PRIM((ObjRef) scan)) {
-            for (k = 0; k < GET_SIZE((ObjRef) scan); k++) {
+            for (int k = 0; k < GET_SIZE((ObjRef) scan); k++) {
                 GET_REFS((ObjRef) scan)[k] = relocate(GET_REFS((ObjRef) scan)[k]);
             }
-            scan += GET_SIZE((ObjRef) scan) * 8 + sizeof(unsigned int);
+            scan += (GET_SIZE((ObjRef) scan) * 8 + sizeof(unsigned int));
         } else {
             scan += (GET_SIZE((ObjRef) scan) + sizeof(unsigned int));
         }
+        printf("nach while\n");
     }
 }
 
 void *allocate(size_t size) {
     char *temp_heap;
-    temp_heap = heap + nextPointer;
+    temp_heap = ziel_halbspeicher + nextPointer;
     nextPointer += size;
-    if (temp_heap >= heap + set_heap_size) {
+    if (temp_heap >= ziel_halbspeicher + set_heap_size) {
         garbagecollector();
     }
     return temp_heap;
 }
 
 void instruktion(int i) {
-    switch (ps[i] >> 24) {
-        case HALT:
-            printf("%.4d\thalt\n", i);
-            break;
-        case PUSHC:
-            printf("%.4d\tpushc\t%d\n", i, SIGN_EXTEND(IMMEDIATE(ps[i])));
-            break;
-        case ADD:
-            printf("%.4d\tadd\n", i);
-            break;
-        case SUB:
-            printf("%.4d\tsub\n", i);
-            break;
-        case MUL:
-            printf("%.4d\tmul\n", i);
-            break;
-        case DIV:
-            printf("%.4d\tdiv\n", i);
-            break;
-        case MOD:
-            printf("%.4d\tmod\n", i);
-            break;
-        case RDINT:
-            printf("%.4d\trdint\n", i);
-            break;
-        case WRINT:
-            printf("%.4d\twrint\n", i);
-            break;
-        case RDCHR:
-            printf("%.4d\trdchr\n", i);
-            break;
-        case WRCHR:
-            printf("%.4d\twrchr\n", i);
-            break;
-        case PUSHG:
-            printf("%.4d\tpushg\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case POPG:
-            printf("%.4d\tpopg\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case ASF:
-            printf("%.4d\tasf\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case RSF:
-            printf("%.4d\trsf\t\n", i);
-            break;
-        case PUSHL:
-            printf("%.4d\tpushl\t%d\n", i, SIGN_EXTEND(IMMEDIATE(ps[i])));
-            break;
-        case POPL:
-            printf("%.4d\tpopl\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case EQ:
-            printf("%.4d\teq\t\n", i);
-            break;
-        case NE:
-            printf("%.4d\tne\t\n", i);
-            break;
-        case LT:
-            printf("%.4d\tlt\t\n", i);
-            break;
-        case LE:
-            printf("%.4d\tls\t\n", i);
-            break;
-        case GT:
-            printf("%.4d\tgt\t\n", i);
-            break;
-        case GE:
-            printf("%.4d\tge\t\n", i);
-            break;
-        case JMP:
-            printf("%.4d\tjmp\t\n", i);
-            break;
-        case BRF:
-            printf("%.4d\tbrf\t\n", i);
-            break;
-        case BRT:
-            printf("%.4d\tbrt\t\n", i);
-            break;
-        case CALL:
-            printf("%.4d\tcall\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case RET:
-            printf("%.4d\tret\t\n", i);
-            break;
-        case DROP:
-            printf("%.4d\tdrop\t%d\n", i, IMMEDIATE(ps[i]));
-            break;
-        case PUSHR:
-            printf("%.4d\tpushr\t\n", i);
-            break;
-        case POPR:
-            printf("%.4d\tpopr\t\n", i);
-            break;
-        case DUP:
-            printf("%.4d\tdup\t\n", i);
-            break;
-        case NEW:
-            printf("%.4d\tnew\t\n", i);
-            break;
-        case GETF:
-            printf("%.4d\tgetf\t\n", i);
-            break;
-        case PUTF:
-            printf("%.4d\tputf\t\n", i);
-            break;
-        case NEWA:
-            printf("%.4d\tnewa\t\n", i);
-            break;
-        case GETFA:
-            printf("%.4d\tgetfa\t\n", i);
-            break;
-        case PUTFA:
-            printf("%.4d\tputfa\t\n", i);
-            break;
-        case GETSZ:
-            printf("%.4d\tgetsz\t\n", i);
-            break;
-        case PUSHN:
-            printf("%.4d\tpushn\t\n", i);
-            break;
-        case REFEQ:
-            printf("%.4d\trefeq\t\n", i);
-            break;
-        case REFNE:
-            printf("%.4d\trefne\t\n", i);
-            break;
-        default:
-            printf("ir is something else\n");
-            exit(1);
-            break;
+    switch(ps[i] >> 24) {
+        case HALT: printf("%.4d\thalt\n", i); break;
+        case PUSHC: printf("%.4d\tpushc\t%d\n", i, SIGN_EXTEND(IMMEDIATE(ps[i]))); break;
+        case ADD: printf("%.4d\tadd\n", i); break;
+        case SUB: printf("%.4d\tsub\n", i); break;
+        case MUL: printf("%.4d\tmul\n", i); break;
+        case DIV: printf("%.4d\tdiv\n", i); break;
+        case MOD: printf("%.4d\tmod\n", i); break;
+        case RDINT: printf("%.4d\trdint\n", i); break;
+        case WRINT: printf("%.4d\twrint\n", i); break;
+        case RDCHR: printf("%.4d\trdchr\n", i); break;
+        case WRCHR: printf("%.4d\twrchr\n", i); break;
+        case PUSHG: printf("%.4d\tpushg\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case POPG: printf("%.4d\tpopg\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case ASF: printf("%.4d\tasf\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case RSF: printf("%.4d\trsf\t\n", i); break;
+        case PUSHL: printf("%.4d\tpushl\t%d\n", i, SIGN_EXTEND(IMMEDIATE(ps[i]))); break;
+        case POPL: printf("%.4d\tpopl\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case EQ: printf("%.4d\teq\t\n", i); break;
+        case NE: printf("%.4d\tne\t\n", i); break;
+        case LT: printf("%.4d\tlt\t\n", i); break;
+        case LE: printf("%.4d\tls\t\n", i); break;
+        case GT: printf("%.4d\tgt\t\n", i); break;
+        case GE: printf("%.4d\tge\t\n", i); break;
+        case JMP: printf("%.4d\tjmp\t\n", i); break;
+        case BRF: printf("%.4d\tbrf\t\n", i); break;
+        case BRT: printf("%.4d\tbrt\t\n", i); break;
+        case CALL: printf("%.4d\tcall\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case RET: printf("%.4d\tret\t\n", i); break;
+        case DROP: printf("%.4d\tdrop\t%d\n", i, IMMEDIATE(ps[i])); break;
+        case PUSHR: printf("%.4d\tpushr\t\n", i); break;
+        case POPR:  printf("%.4d\tpopr\t\n", i); break;
+        case DUP: printf("%.4d\tdup\t\n", i); break;
+        case NEW: printf("%.4d\tnew\t\n", i); break;
+        case GETF: printf("%.4d\tgetf\t\n", i); break;
+        case PUTF: printf("%.4d\tputf\t\n", i); break;
+        case NEWA: printf("%.4d\tnewa\t\n", i); break;
+        case GETFA: printf("%.4d\tgetfa\t\n", i); break;
+        case PUTFA: printf("%.4d\tputfa\t\n", i); break;
+        case GETSZ: printf("%.4d\tgetsz\t\n", i); break;
+        case PUSHN: printf("%.4d\tpushn\t\n", i); break;
+        case REFEQ: printf("%.4d\trefeq\t\n", i); break;
+        case REFNE: printf("%.4d\trefne\t\n", i); break;
+        default: printf("ir is something else\n"); exit(1); break;
     }
 }
 
@@ -333,11 +255,10 @@ void exec(int ir) {
     /*or it used for buffer*/
     int value = 0;
     // int value2 = 0;
-    switch ((ir >> 24)) {
+    switch((ir >> 24)) {
         case HALT:
             //printf("Fehler halt\n");
-            halt = 1;
-            break;
+            halt = 1; break;
         case PUSHC: // push value ir ^ (1 << 24)
             //printf("Fehler pushc\n");
             bigFromInt(SIGN_EXTEND(IMMEDIATE(ir)));
@@ -380,7 +301,7 @@ void exec(int ir) {
             break;
         case RDINT: // scan return 1 if read value successfully
             //	printf("Fehler rdint\n");
-            if (scanf("%d", &value) == 1) {
+            if(scanf("%d", &value) == 1) {
                 bigFromInt(value);
                 pushObjRef(bip.res);
             } else {
@@ -406,17 +327,15 @@ void exec(int ir) {
             break;
         case PUSHG:
             //	printf("Fehler pushg\n");
-            pushg(SIGN_EXTEND(IMMEDIATE(ir)));
-            break;
+            pushg(SIGN_EXTEND(IMMEDIATE(ir))); break;
         case POPG:
             //	printf("Fehler popg\n");
-            popg(SIGN_EXTEND(IMMEDIATE(ir)));
-            break;
+            popg(SIGN_EXTEND(IMMEDIATE(ir))); break;
         case ASF:
             //	printf("Fehler asf\n");
             pushNumber(fp);
             fp = sp;
-            for (int i = 0; i < IMMEDIATE(ir); i++)
+            for(int i = 0; i < IMMEDIATE(ir); i++)
                 pushObjRef(NULL);
             //sp = sp + IMMEDIATE(ir);
             break;
@@ -427,17 +346,15 @@ void exec(int ir) {
             break;
         case PUSHL:
             //	printf("Fehler pushl\n");
-            pushl(SIGN_EXTEND(IMMEDIATE(ir)) + fp);
-            break;
+            pushl(SIGN_EXTEND(IMMEDIATE(ir)) + fp); break;
         case POPL:
             //	printf("Fehler popl\n");
-            popl(fp + SIGN_EXTEND(IMMEDIATE(ir)));
-            break;
+            popl(fp+SIGN_EXTEND(IMMEDIATE(ir))); break;
         case EQ: // value1 == value2
             //	printf("Fehler eq\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() == 0)
+            if(bigCmp() == 0)
                 bigFromInt(1);
             else
                 bigFromInt(0);
@@ -447,7 +364,7 @@ void exec(int ir) {
             //	printf("Fehler ne\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() == 0)
+            if(bigCmp() == 0)
                 bigFromInt(0);
             else
                 bigFromInt(1);
@@ -457,7 +374,7 @@ void exec(int ir) {
             //	printf("Fehler lt\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() < 0)
+            if(bigCmp() < 0)
                 bigFromInt(1);
             else
                 bigFromInt(0);
@@ -467,7 +384,7 @@ void exec(int ir) {
             //	printf("Fehler le\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() <= 0)
+            if(bigCmp() <= 0)
                 bigFromInt(1);
             else
                 bigFromInt(0);
@@ -477,7 +394,7 @@ void exec(int ir) {
             //	printf("Fehler gt\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() > 0)
+            if(bigCmp() > 0)
                 bigFromInt(1);
             else
                 bigFromInt(0);
@@ -487,25 +404,23 @@ void exec(int ir) {
             //	printf("Fehler ge\n");
             bip.op2 = popObjRef();
             bip.op1 = popObjRef();
-            if (bigCmp() >= 0)
+            if(bigCmp() >= 0)
                 bigFromInt(1);
             else
                 bigFromInt(0);
             pushObjRef(bip.res);
             break;
-        case JMP:
-            pc = IMMEDIATE(ir);
-            break;
+        case JMP: pc = IMMEDIATE(ir); break;
         case BRF:
             //	printf("Fehler brf\n");
             bip.op1 = popObjRef();
-            if (bigToInt() == 0)
+            if(bigToInt() == 0)
                 pc = IMMEDIATE(ir);
             break;
         case BRT:
             //	printf("Fehler brt\n");
             bip.op1 = popObjRef();
-            if (bigToInt() == 1)
+            if(bigToInt() == 1)
                 pc = IMMEDIATE(ir);
             break;
         case CALL:
@@ -520,19 +435,17 @@ void exec(int ir) {
         case DROP:
             //	printf("Fehler drop\n");
             value = IMMEDIATE(ir);
-            while (value > 0) {
+            while(value > 0) {
                 popObjRef();
                 value--;
             }
             break;
         case PUSHR:
             //	printf("Fehler pushr\n");
-            pushObjRef(r[0]);
-            break;
+            pushObjRef(r[0]); break;
         case POPR:
             //	printf("Fehler popr\n");
-            r[0] = popObjRef();
-            break;
+            r[0] = popObjRef(); break;
         case DUP:
             //	printf("Fehler dup\n");
             bip.res = popObjRef();
@@ -575,7 +488,7 @@ void exec(int ir) {
         case GETSZ:
             //	printf("Fehler getsz\n");
             bip.op1 = popObjRef();
-            if (IS_PRIM(bip.op1))
+            if(IS_PRIM(bip.op1))
                 bigFromInt(-1);
             else
                 bigFromInt(GET_SIZE(bip.op1));
@@ -589,7 +502,7 @@ void exec(int ir) {
             //	printf("Fehler refeq\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
-            if (bip.op2 == bip.op1)
+            if(bip.op2 == bip.op1)
                 bigFromInt(1);
             else
                 bigFromInt(0);;
@@ -599,20 +512,18 @@ void exec(int ir) {
             //	printf("Fehler refne\n");
             bip.op1 = popObjRef();
             bip.op2 = popObjRef();
-            if (bip.op2 != bip.op1)
+            if(bip.op2 != bip.op1)
                 bigFromInt(1);
             else
                 bigFromInt(0);
             pushObjRef(bip.res);
             break;
-        default:
-            printf("Error in void exec(int ir): ir is something else\n");
-            break;
+        default: printf("Error in void exec(int ir): ir is something else\n"); break;
     }
 }
 
 void memory_is_full(void *x) {
-    if (x == NULL) {
+    if(x == NULL) {
         printf("Error: heap overflow\n");
         exit(1);
     }
@@ -628,24 +539,24 @@ void load_data(char file[]) {
 
     /*open file*/
     f = fopen(file, "r");
-    if (f == NULL) {
+    if(f == NULL) {
         printf("Error: cannot open code file '%s'\n", file);
         exit(1);
     } else {
         // read header of the file f
-        if (fread(&buffer, sizeof(header_t), 1, f) != 1) {
+        if(fread(&buffer, sizeof(header_t), 1, f) != 1) {
             printf("Error: reading\n");
             exit(1);
         }
 
         /*Verify the format identifier*/
-        if (!strncmp(buffer.name, "NJBF", 4) == 0) {
+        if(!strncmp(buffer.name, "NJBF", 4) == 0) {
             printf("identifier invalid\n");
             exit(1);
         }
 
         /*Verify that this matches the current VM's version number*/
-        if (buffer.version != VERSION) {
+        if(buffer.version != VERSION) {
             printf("Version number doesn't match the version number of VM\n");
             exit(1);
         }
@@ -673,7 +584,7 @@ void load_data(char file[]) {
         }*/
 
         // read Instruktionen
-        if (fread(ps, sizeof(int), buffer.noi, f) != buffer.noi) {
+        if(fread(ps, sizeof(int), buffer.noi, f) != buffer.noi) {
             printf("Error: reading\n");
             exit(1);
         }
@@ -690,21 +601,21 @@ void read_line(char *str) {
     // result:
     // maximum one blank
     // write big input without care array size
-    while ((c = getchar()) != '\n') {        // 10 --> character '\n'
+    while((c = getchar()) != '\n') {		// 10 --> character '\n'
 
-        if (count >= MAX)            // do nothing because array is full
+        if(count >= MAX)			// do nothing because array is full
             ;
-        else if (c != ' ' && c != '\t') {    // check for others character
+        else if(c != ' ' && c != '\t') {	// check for others character
             str[count] = c;
             count++;
         }
     }
 
-    if (count)
-        str[count] = '\0';            // end of String terminate by '\0'
+    if(count)
+        str[count] = '\0';			// end of String terminate by '\0'
     else {
-        str[count] = '\n';            // if user doesn't input anything example below
-        str[++count] = '\0';            // strncmp("\0", "inspect", 0) = 0 == 0 consequences program continue
+        str[count] = '\n';			// if user doesn't input anything example below
+        str[++count] = '\0';			// strncmp("\0", "inspect", 0) = 0 == 0 consequences program continue
     }
 }
 
@@ -716,41 +627,42 @@ void inspect(char *x) {
     read_line(x);
 
 
-    if (strncmp(x, "data", count) == 0) {
-        for (int i = 0; i < buffer.sda; i++)
-            printf("data[%.4d]:\t%d\n", i, *(int *) (static_data_area[i]->data));
+    if(strncmp(x, "data", count) == 0) {
+        for(int i = 0; i < buffer.sda; i++)
+            printf("data[%.4d]:\t%d\n", i, *(int*) (static_data_area[i]->data));
         printf("\t--- end of code ---\n");
-    } else if (strncmp(x, "stack", count) == 0) {
-        if (fp == sp) {
+    } else if(strncmp(x, "stack", count) == 0) {
+        if(fp == sp) {
             printf("sp, fp  --->\t%.4d:\t(xxxxxx) xxxxxx\n", fp);
             printf("\t\t--- bottom of stack ---\n");
         } else {
-            for (int i = sp; i >= 0; i--) {
-                if (i == sp)
+            for(int i = sp; i >= 0; i--) {
+                if(i == sp)
                     printf("sp\t--->\t%.4d\t(xxxxxx) xxxxxx\n", sp);
-                else if (i == fp)
-                    if (is_objRef(i))
-                        printf("fp\t--->\t%.4d:\t(objref) %p\n", i, (void *) stack[i].u.objRef);
+                else if(i == fp)
+                    if(is_objRef(i))
+                        printf("fp\t--->\t%.4d:\t(objref) %p\n", i, (void*) stack[i].u.objRef);
                     else
                         printf("fp\t--->\t%.4d:\t(number) %d\n", i, stack[i].u.number);
-                else if (is_objRef(i))
-                    printf("\t\t%.4d:\t(objref) %p\n", i, (void *) stack[i].u.objRef);
+                else
+                if(is_objRef(i))
+                    printf("\t\t%.4d:\t(objref) %p\n", i, (void*) stack[i].u.objRef);
                 else
                     printf("\t\t%.4d:\t(number) %d\n", i, stack[i].u.number);
             }
             printf("\t\t--- bottom of stack ---\n");
         }
-    } else if (strncmp(x, "object", count) == 0) {
+    } else if(strncmp(x, "object", count) == 0) {
         printf("object reference?\n");
         scanf("%p", &a);
-        while (j < buffer.noi) {
-            if (is_objRef(j))
-                if (a == (void *) stack[j].u.objRef)
+        while(j < buffer.noi) {
+            if(is_objRef(j))
+                if(a == (void*) stack[j].u.objRef)
                     break;
             j++;
         }
 
-        if (IS_PRIM(stack[j].u.objRef)) {
+        if(IS_PRIM(stack[j].u.objRef)){
             printf("<primitive object>\n");
             bip.op1 = stack[j].u.objRef;
             printf("Value:\t\t%d\n", bigToInt());
@@ -761,14 +673,14 @@ void inspect(char *x) {
 }
 
 void list(int prog_size) {
-    for (int i = 0; i < prog_size; i++) {
+    for(int i = 0; i < prog_size; i++) {
         instruktion(i);
     }
     printf("\t--- end of code ---\n");
 }
 
 void break_point(char *x) {
-    if (value == -1)
+    if(value == -1)
         printf("DEBUG [breakpoint]: cleared\n");
     else
         printf("DEBUG [breakpoint]: set at %d\n", value);
@@ -776,42 +688,44 @@ void break_point(char *x) {
 
     read_line(x);
     // explicit input 0 because function atoi(int) = 0 if parameter is not a number
-    if (strcmp(x, "0") == 0) {
+    if(strcmp(x, "0") == 0) {
         breakpoint = 0;
         printf("DEBUG [breakpoint]: now set at %d\n", breakpoint);
         return;
-    } else if (strcmp(x, "-1") == 0) {
+    } else if(strcmp(x, "-1") == 0) {
         value = -1;
         printf("DEBUG [breakpoint]: now cleared\n");
         return;
     }
 
     // does not include character
-    for (int i = 0; i < count; i++)
-        if (x[i] < 48 || x[i] > 57)        // 48 == '0' ... 57 == '9'
+    for(int i = 0; i < count; i++)
+        if(x[i] < 48 || x[i] > 57) 		// 48 == '0' ... 57 == '9'
             return;
 
     value = atoi(x);
-    if (value < 0 || value > buffer.noi)
+    if(value < 0 || value > buffer.noi)
         printf("number of instruction = %d\n", buffer.noi);
-    else if (value != 0) {
-        breakpoint = value;        // important for function run()
+    else if(value != 0) {
+        breakpoint = value;		// important for function run()
         printf("DEBUG [breakpoint]: now set at %d\n", breakpoint);
     }
 }
 
 void run(void) {
     int ir = 0;
-    while (!halt) {
-        if (pc == breakpoint) {
+    while(!halt) {
+        if(pc == breakpoint) {
             debugCount = pc;
             return;
-        } else if (step) {
+        } else
+
+        if(step) {
             debugCount = pc;
             return;
         }
 
-        if (switcher)
+        if(switcher)
             step = 1;
         ir = ps[pc];
         pc++;
@@ -832,20 +746,20 @@ void debug(void) {
 
     read_line(input);
 
-    if (strncmp(input, "inspect", count) == 0)
+    if(strncmp(input, "inspect", count) == 0)
         option = INSPECT;
-    else if (strncmp(input, "list", count) == 0)
+    else if(strncmp(input, "list", count) == 0)
         option = LIST;
-    else if (strncmp(input, "breakpoint", count) == 0)
+    else if(strncmp(input, "breakpoint", count) == 0)
         option = BREAKPOINT;
-    else if (strncmp(input, "step", count) == 0)
+    else if(strncmp(input, "step", count) == 0)
         option = STEP;
-    else if (strncmp(input, "run", count) == 0)
+    else if(strncmp(input, "run", count) == 0)
         option = RUN;
-    else if (strncmp(input, "quit", count) == 0)
+    else if(strncmp(input, "quit", count) == 0)
         option = QUIT;
 
-    switch (option) {
+    switch(option) {
         case INSPECT:
             inspect(x);
             break;
@@ -870,18 +784,17 @@ void debug(void) {
             printf("Ninja Virtual Machine stopped\n");
             halt = 1;
             break;
-        default:
-            break;
+        default: break;
     }
 }
 
 int f(int argc, char *argv[]) {
-    if (strcmp(argv[argc], "--version") == 0) {
+    if(strcmp(argv[argc], "--version") == 0) {
         printf("Ninja Virtual Machine version %d (compiled %s, %s)\n", VERSION, __DATE__, __TIME__);
         return 1;
     }
 
-    if (strcmp(argv[argc], "--help") == 0) {
+    if(strcmp(argv[argc], "--help") == 0) {
         printf("usage: ./njvm [options] <code file>\n");
         printf("Option:\n");
         printf("  --debug\t   start virtual machine in debug mode\n");
@@ -890,7 +803,7 @@ int f(int argc, char *argv[]) {
         return 1;
     }
 
-    if (strncmp(argv[argc], "-", 1) == 0 && strcmp(argv[argc], "--debug") != 0) {
+    if(strncmp(argv[argc], "-", 1) == 0 && strcmp(argv[argc], "--debug") != 0) {
         printf("Error: unknown option '%s', try './njvm --help'\n", argv[argc]);
         return 1;
     }
@@ -904,38 +817,41 @@ int position = 0;
 
 int argn(int n, char *argv[], char *str[], int max) {
     int i = 0;
-    if (!strcmp(argv[n], str[i++])) {
-        if (n == max) {
+    if(!strcmp(argv[n], str[i++])) {
+        if(n == max) {
             printf("Error: stack size is missing\n");
             exit(0);
-        } else if (atoi(argv[n + 1]) != 0) {
-            if (atoi(argv[n + 1]) < 0);
+        } else if(atoi(argv[n+1]) != 0) {
+            if(atoi(argv[n+1]) < 0)
+                ;
             else
-                set_stack_size = atoi(argv[n + 1]);
+                set_stack_size = atoi(argv[n+1]);
             counter++;
         } else {
             printf("Error: illegal stack size\n");
             exit(0);
         }
-    } else if (!strcmp(argv[n], str[i++]))
-        if (n == max) {
+    } else if(!strcmp(argv[n], str[i++]))
+        if(n == max) {
             printf("Error: heap size is missing\n");
             exit(0);
-        } else if (atoi(argv[n + 1]) != 0) {
-            if (atoi(argv[n + 1]) < 0);
+        } else if(atoi(argv[n+1]) != 0) {
+            if(atoi(argv[n+1]) < 0)
+                ;
             else
-                set_heap_size = atoi(argv[n + 1]);
+                set_heap_size = atoi(argv[n+1]);
             counter++;
         } else {
             printf("Error: illegal heap size\n");
             exit(0);
         }
-    else if (!strcmp(argv[n], str[i++]))
+    else if(!strcmp(argv[n], str[i++]))
         start_debug = 1;
-    else if (!strcmp(argv[n], str[i++])) {
+    else if(!strcmp(argv[n], str[i++])) {
         printf("Ninja Virtual Machine version %d (compiled %s, %s)\n", VERSION, __DATE__, __TIME__);
         return 1;
-    } else if (!strcmp(argv[n], str[i++])) {
+    }
+    else if(!strcmp(argv[n], str[i++])) {
         printf("usage: ./njvm [options] <code file>\n");
         printf("Option:\n");
         printf("  --stack <n>\t   set stack size to n KBytes (default: n = 64)\n");
@@ -946,13 +862,13 @@ int argn(int n, char *argv[], char *str[], int max) {
         printf("  --version\t   show version and exit\n");
         printf("  --help\t   show this help and exit\n");
         return 1;
-    } else if (!strncmp(argv[n], "-", 1)) {
+    } else if(!strncmp(argv[n], "-", 1)) {
         printf("Error: unknown option '%s', try './njvm --help'\n", argv[n]);
         exit(0);
     } else {
         bin++;
         position = n;
-        if (bin > 1) {
+        if(bin > 1) {
             printf("Error: more than one code file specified\n");
             return 1;
         }
@@ -961,7 +877,7 @@ int argn(int n, char *argv[], char *str[], int max) {
 }
 
 void start(char *argv) {
-    if (set_stack_size > 0) {
+    if(set_stack_size > 0) {
         printf("stack1\n");
         stack = malloc(set_stack_size * 1024);
         printf("stack2\n");
@@ -977,37 +893,37 @@ void start(char *argv) {
         printf("stack6\n");
     }
 
-    if (set_heap_size > 0) {
+    if(set_heap_size > 0) {
         printf("heap1\n");
-        heap = malloc(set_heap_size * 512);
+        ziel_halbspeicher = malloc(set_heap_size * 512);
         printf("heap2\n");
-        memory_is_full(heap);
+        memory_is_full(ziel_halbspeicher);
         printf("heap3\n");
-        heap2 = malloc(set_heap_size * 512);
+        quell_halbspeicher = malloc(set_heap_size * 512);
         printf("heap4\n");
-        memory_is_full(heap2);
+        memory_is_full(quell_halbspeicher);
         printf("heap5\n");
     } else {
         printf("heap6\n");
-        heap = malloc(8192 * 512);
+        ziel_halbspeicher = malloc(8192 * 512);
         printf("heap7\n");
-        memory_is_full(heap);
+        memory_is_full(ziel_halbspeicher);
         printf("heap8\n");
-        heap2 = malloc(8192 * 512);
+        quell_halbspeicher = malloc(8192 * 512);
         printf("heap9\n");
-        memory_is_full(heap2);
+        memory_is_full(quell_halbspeicher);
         printf("heap10\n");
     }
 
-    if (start_debug && bin == 1) {
+    if(start_debug && bin == 1) {
         load_data(argv);
         printf("DEBUG: file '%s' loaded (code size = ", argv);
         printf("%d, datasize = %d)\n", buffer.noi, buffer.sda);
         printf("Ninja Virtual Machine started\n");
-        while (!halt) {
+        while(!halt) {
             debug();
         }
-    } else if (bin == 1) {
+    } else if(bin == 1) {
         //printf("start programm\n");
         load_data(argv);
 
@@ -1036,19 +952,19 @@ int main(int argc, char *argv[]) {
     str[4] = "--help";
     int stopp = 1;
 
-    if (argc == 1)
+    if(argc == 1)
         printf("Error: no code file specified\n");
-    else if (argc == 2) {
-        argn(1, argv, str, 1);
+    else if(argc == 2) {
+        argn( 1, argv, str, 1);
         start(argv[position]);
-    } else if (argc > 2) {
-        for (counter = 1; counter < argc; counter++)
-            if (argn(counter, argv, str, argc - 1)) {
+    } else if(argc > 2) {
+        for(counter = 1; counter < argc; counter++)
+            if(argn(counter, argv, str, argc-1)) {
                 stopp = 0;
                 break;
             }
 
-        if (stopp)
+        if(stopp)
             start(argv[position]);
     }
     return 0;
