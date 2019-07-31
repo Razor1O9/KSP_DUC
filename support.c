@@ -35,8 +35,7 @@ void fatalError(char *msg) {
 ObjRef newPrimObject(int dataSize) {
     ObjRef objRef;
 
-    objRef = malloc(sizeof(unsigned int) +
-                    dataSize * sizeof(unsigned char));
+    objRef = allocate(sizeof(unsigned int) + dataSize * sizeof(unsigned char));
     if (objRef == NULL) {
         fatalError("newPrimObject() got no memory");
     }

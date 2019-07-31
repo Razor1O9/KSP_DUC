@@ -17,7 +17,7 @@ ObjRef *r;
 int max_size = 0;
 
 ObjRef newCompoundObject(int objRefSize) {
-    ObjRef objRef = malloc(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+    ObjRef objRef = allocate(objRefSize * sizeof(ObjRef) + sizeof(unsigned int));
     objRef->size = objRefSize | MSB;
 
     for(int i = 0; i < objRefSize; i++)

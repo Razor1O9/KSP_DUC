@@ -38,6 +38,7 @@ void pushl(int);
 void popl(int);
 void pushg(int);
 void popg(int);
+void *allocate(size_t size);
 
 ObjRef newCompoundObject(int numObjRefs);
 
