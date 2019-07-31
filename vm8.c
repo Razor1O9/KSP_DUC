@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <bigint.h>
+#include "Aufgabe_7/bigint/build/include/bigint.h"
 #include "stack8.h"
 
 #define IMMEDIATE(x) ((x) & 0x00FFFFFF)
@@ -154,12 +154,6 @@ ObjRef relocate(ObjRef orig) {
 }
 
 void garbagecollector() {
-    char* scan;
-    char *temp;
-    temp = ziel_halbspeicher;
-    ziel_halbspeicher = quell_halbspeicher;
-    quell_halbspeicher = temp;
-    nextPointer = 0;
     char* scan;
     char *temp;
     temp = ziel_halbspeicher;
