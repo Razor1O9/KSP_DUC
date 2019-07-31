@@ -196,8 +196,8 @@ void *allocate(size_t size){
     else
         x = set_heap_size * 512;
 
-    nextPointer += size;
     temp = ziel_halbspeicher + nextPointer;
+    nextPointer += size;
 
     if(temp >=  ziel_halbspeicher + x) {
         if(nextPointer >= x) {
