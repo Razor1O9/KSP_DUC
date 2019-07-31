@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Aufgabe_7/bigint/build/include/support.h"
+#include "bigint/build/include/support.h"
 
 #include "vm.h"
 

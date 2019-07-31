@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "Aufgabe_7/bigint/build/include/bigint.h"
+#include "bigint/build/include/bigint.h"
 #include "stack8.h"
 
 #define IMMEDIATE(x) ((x) & 0x00FFFFFF)
@@ -87,7 +87,7 @@ static int halt = 0;
 // program counter
 static int pc = 0;
 // current instruktion in debug mode
-static unsigned int index = 0;
+static unsigned int debugCount = 0;
 // set breakpoint in debug mode
 static int breakpoint = -1;
 // next instruktion in debug mode
@@ -722,12 +722,12 @@ void run(void) {
     int ir = 0;
     while(!halt) {
         if(pc == breakpoint) {
-            index = pc;
+            debugCount = pc;
             return;
         } else
 
         if(step) {
-            index = pc;
+            debugCount = pc;
             return;
         }
 
@@ -747,7 +747,7 @@ void debug(void) {
     char x[6] = "";
     unsigned int option = 0;
 
-    instruktion(index);
+    instruktion(debugCount);
     printf("DEBUG: inspect, list, breakpoint, step, run, quit?\n");
 
     read_line(input);
