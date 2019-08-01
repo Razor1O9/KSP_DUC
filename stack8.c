@@ -27,26 +27,22 @@ header_t buffer;
 char *temp_heap;
 
 ObjRef copyObjectToFreeMem(ObjRef orig){
-/*	printf("Speicherstelle:  %p, Source:   %p,    Große Objekt:    %i, next Pointer:         %i\n",heap + nextPointer, orig ,(GET_SIZE(orig) + sizeof(unsigned int)),nextPointer);*/
 	if(!BROKEN_HEART(orig)){
 		printf("BROKEN_HEART\n");
 		if(IS_PRIM(orig)){
 			printf("IS_PRIM\n");
 			printf("nextPointer = %d und ziel_halbspeicher = %p und orig = %p\n", nextPointer, ziel_halbspeicher + nextPointer, (void*) orig);
-	/*		printf("is prim\n");*/
 			memcpy((ziel_halbspeicher + nextPointer), orig, (GET_SIZE(orig) + sizeof(unsigned int)));
 			printf("nach IS_PRIM\n");
-		/*	printf("%i             old prim\n", nextPointer);*/
 			nextPointer += (GET_SIZE(orig) + sizeof(unsigned int));
-			/*printf("%i            prim\n", nextPointer);*/
 		}
 		else{
 			printf("not IS_PRIM\n");
-		/*	printf("not prim\n");*/
+
 			memcpy(ziel_halbspeicher + nextPointer, orig, (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
-		/*	printf("not prim 2\n");*/
+
 			nextPointer += (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int)));
-		/*	printf("%i                not prim\n", nextPointer);*/
+
 			printf("nach not IS_PRIM\n");
 
 		}
@@ -60,23 +56,22 @@ ObjRef relocate(ObjRef orig) {
 	ObjRef copy;
 	if(orig == NULL) {
 		printf("orig = NULL\n");
-		/*printf("%i      Null\n", nextPointer);*/
+
 		copy = NULL;
 	}
 	else if((orig->size & SECBIT) == 1) {
 		printf("realocate BROKEN_HEART\n");
-		/*printf("%i           Broken_heart\n", nextPointer);*/
-		copy = FORWARDPOINTER(orig);
+
+		copy = (ObjRef)(orig + FORWARDPOINTER(orig));
 	}
 	else
 	{
 		printf("realocate else = %p\n", (void*) orig);
-	/*	printf("%i    %p      obj kopiert\n", nextPointer, objRef);*/
+
 		copy = copyObjectToFreeMem(orig);
-	/*	printf("%i    %p      copy kopiert\n", nextPointer, copy);*/
 
 		orig->size = SECBIT;
-		orig->size = FORWARDPOINTER(copy);
+		orig->size = FORWARDPOINTER(orig);
 	}
 	printf("nach relocate\n");
 	return copy;
@@ -92,6 +87,15 @@ void garbagecollector(){
 	ziel_halbspeicher = quell_halbspeicher;
 	quell_halbspeicher = temp;
 	nextPointer = 0;
+
+	for(j = 0; j < buffer.sda; j++){
+		static_data_area[j] = relocate(static_data_area[j]);
+	}
+	printf("static_data_area\n");
+
+	r[1] = relocate(r[1]);
+	printf("returnregister\n");
+
 	printf("vor stack\n");
 	for(i = 0; i < sp; i++){
 		if(stack[i].isObjRef){
@@ -100,30 +104,31 @@ void garbagecollector(){
 		}
 	}
 	printf("nach stack\n");
+	
 	bip.op1 = relocate(bip.op1);
 	bip.op2 = relocate(bip.op2);
 	bip.res = relocate(bip.res);
 	bip.rem = relocate(bip.rem);
 	printf("bip\n");
-	r[1] = relocate(r[1]);
-	printf("returnregister\n");
-	for(j = 0; j < buffer.sda; j++){
-		static_data_area[j] = relocate(static_data_area[j]);
-	}
-	printf("static_data_area\n");
+
 	scan = ziel_halbspeicher;
-	while(scan != ziel_halbspeicher + nextPointer) {
+	while(scan <= ziel_halbspeicher + nextPointer) {
 /* es gibt noch Objekte, die gescannt werden müssen */
 		if(!IS_PRIM((ObjRef)scan)) {
 			for(k = 0; k < GET_SIZE((ObjRef)scan); k++) {
 				GET_REFS((ObjRef)scan)[k] = relocate(GET_REFS((ObjRef)scan)[k]);
 			}
+			printf("end of for\n");
 		//scan += GET_SIZE((ObjRef)scan) * 8 + sizeof(unsigned int);
 		}
+		printf("scan %ld\n", (GET_SIZE((ObjRef)scan) + sizeof(unsigned int)));
 		//else{
 		scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
 		//}
+		printf("scan %p\n", (void*) scan);
+		printf("ziel_halbspeicher %p\n", (void*) ziel_halbspeicher);
 	}
+	nextPointer = 0;
 	printf("end while\n");
 }
 
@@ -145,7 +150,7 @@ void *allocate_data(size_t size){
 	printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);*/
 	//temp_heap = ziel_halbspeicher;
 	//temp_heap = temp_heap + + nextPointer;
-	
+	printf("nextPointer = %d\n", nextPointer);
 	temp_heap = ziel_halbspeicher + nextPointer;
 	nextPointer += size;
 	//printf("Vergleich von Zeigern = %d\n", temp_heap >= (ziel_halbspeicher + halfsize));
