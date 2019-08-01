@@ -100,6 +100,7 @@ void garbagecollector(){
 	bip.op1 = relocate(bip.op1);
 	bip.op2 = relocate(bip.op2);
 	bip.res = relocate(bip.res);
+	bip.rem = relocate(bip.rem);
 	printf("bip\n");
 	r[1] = relocate(r[1]);
 	printf("returnregister\n");
@@ -114,11 +115,11 @@ void garbagecollector(){
 			for(k = 0; k < GET_SIZE((ObjRef)scan); k++) {
 				GET_REFS((ObjRef)scan)[k] = relocate(GET_REFS((ObjRef)scan)[k]);
 			}
-		scan += GET_SIZE((ObjRef)scan) * 8 + sizeof(unsigned int);
+		//scan += GET_SIZE((ObjRef)scan) * 8 + sizeof(unsigned int);
 		}
-		else{
-			scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
-		}
+		//else{
+		scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
+		//}
 	}
 }
 

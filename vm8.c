@@ -773,10 +773,10 @@ void start(char *argv) {
 		run();
 			
 		// release memory from ps
-		free(ps);
+		//free(ps);
 
 		// release memory from static_data_area
-		free(static_data_area);
+		//free(static_data_area);
 	}
 }
 
