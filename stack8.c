@@ -87,10 +87,10 @@ void garbagecollector(){
 	int i = 0;
 	int k = 0;
 	int j = 0;
-	char *temp_heap;
-	temp_heap = ziel_halbspeicher;
+	char *temp;
+	temp = ziel_halbspeicher;
 	ziel_halbspeicher = quell_halbspeicher;
-	quell_halbspeicher = temp_heap;
+	quell_halbspeicher = temp;
 	nextPointer = 0;
 	printf("vor stack\n");
 	for(i = 0; i < sp; i++){
@@ -124,6 +124,7 @@ void garbagecollector(){
 		scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
 		//}
 	}
+	printf("end while\n");
 }
 
 void *allocate_header(size_t size) {
@@ -138,24 +139,25 @@ void *allocate_header(size_t size) {
 }
 
 void *allocate_data(size_t size){
-	
+	char *x;
 	/*printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
 	printf("ziel_halbspeicher + nextPointer = %p\n", ziel_halbspeicher + nextPointer);
 	printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);*/
 	//temp_heap = ziel_halbspeicher;
 	//temp_heap = temp_heap + + nextPointer;
-	temp_heap = ziel_halbspeicher + nextPointer;
 	
+	temp_heap = ziel_halbspeicher + nextPointer;
+	nextPointer += size;
 	//printf("Vergleich von Zeigern = %d\n", temp_heap >= (ziel_halbspeicher + halfsize));
-	if(temp_heap >= (ziel_halbspeicher + halfsize)){
+	/*if(temp_heap >= (ziel_halbspeicher + halfsize)){
 		printf("gc\n");
 	
 		printf("garbagecollector11111111111111111111111111111111111111111111111111111111111111111111\n");
 		garbagecollector();
-	}
-	nextPointer += size;
+	}*/
+	x = temp_heap;
 	//printf("Vergleich von Zeigern 2 = %d\n", (temp_heap + size) >= (ziel_halbspeicher + halfsize));
-	if((temp_heap + size) >= (ziel_halbspeicher + halfsize)) {
+	if((x) >= (ziel_halbspeicher + halfsize)) {
 		printf("gc\n");
 		garbagecollector();	
 	} //else if(nextPointer >= halfsize) {
@@ -166,6 +168,7 @@ void *allocate_data(size_t size){
 	//printf("nextPointer >= halfsize = %d\n", nextPointer >= halfsize);
 	//printf("halfsize = %d\n", halfsize);
 	//printf("temp_heap = %p\n", temp_heap);
+	
 	return temp_heap;
 }
 
