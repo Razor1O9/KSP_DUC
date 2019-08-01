@@ -393,13 +393,14 @@ void exec(int ir) {
 
 void memory_is_full(void *x) {
     if(x == NULL) {
-        printf("memory is full.\n");
+        printf("Error: heap overflow\n");
         exit(1);
     }
 }
 
 void load_data(char file[]) {
     r = allocate(sizeof(ObjRef));
+    memory_is_full(r);
 
     /*create file pointer*/
     FILE *fp;
@@ -651,29 +652,7 @@ void debug(void) {
     }
 }
 
-int f(int argc, char *argv[]) {
-    if(strcmp(argv[argc], "--version") == 0) {
-        printf("Ninja Virtual Machine version %d (compiled %s, %s)\n", VERSION, __DATE__, __TIME__);
-        return 1;
-    }
-
-    if(strcmp(argv[argc], "--help") == 0) {
-        printf("usage: ./njvm [options] <code file>\n");
-        printf("Option:\n");
-        printf("  --debug\t   start virtual machine in debug mode\n");
-        printf("  --version\t   show version and exit\n");
-        printf("  --help\t   show this help and exit\n");
-        return 1;
-    }
-
-    if(strncmp(argv[argc], "-", 1) == 0 && strcmp(argv[argc], "--debug") != 0) {
-        printf("Error: unknown option '%s', try './njvm --help'\n", argv[argc]);
-        return 1;
-    }
-    return 0;
-}
-
-int argn(int n, char *argv[], char *str[], int last_argument) {
+int argument(int n, char *argv[], char *str[], int last_argument) {
     int i = 0;
     if(!strcmp(argv[n], str[i++])) {
         if(n == last_argument) {
@@ -732,7 +711,7 @@ int argn(int n, char *argv[], char *str[], int last_argument) {
     return 0;
 }
 
-void start(char *argv) {
+void start_njvm(char *argv) {
     if(set_stack_size > 0) {
         stack = malloc(set_stack_size * 1024);
         max_size = 64 * 1024 / sizeof(Stackslot);
@@ -802,17 +781,17 @@ int main(int argc, char *argv[]) {
     if(argc == 1)
         printf("Error: no code file specified\n");
     else if(argc == 2) {
-        argn( 1, argv, str, 1);
-        start(argv[position]);
+        argument( 1, argv, str, 1);
+        start_njvm(argv[position]);
     } else if(argc > 2) {
         for(counter = 1; counter < argc; counter++)
-            if(argn(counter, argv, str, argc-1)) {
+            if(argument(counter, argv, str, argc-1)) {
                 stopp = 0;
                 break;
             }
 
         if(stopp)
-            start(argv[position]);
+            start_njvm(argv[position]);
     }
     return 0;
 }
