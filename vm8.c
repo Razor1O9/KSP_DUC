@@ -388,7 +388,7 @@ void exec(int ir) {
 
 void memory_is_full(void *x) {
 	if(x == NULL) {
-			printf("memory is full.\n");
+			printf("Error: heap overflow\n");
 			exit(1);
 		}
 }
@@ -745,6 +745,7 @@ void start(char *argv) {
 		quell_halbspeicher = malloc(set_heap_size * 512);
 		memory_is_full(quell_halbspeicher);
 		halfsize = set_heap_size * 512;
+		printf("set_heap_size = %d\n", set_heap_size);
 	} else {
 		ziel_halbspeicher = malloc(8192 * 512);
 		memory_is_full(ziel_halbspeicher);

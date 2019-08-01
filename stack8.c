@@ -57,6 +57,7 @@ ObjRef relocate(ObjRef orig) {
 	printf("relocate\n");
 	ObjRef copy;
 	if(orig == NULL) {
+		printf("orig = NULL\n");
 		/*printf("%i      Null\n", nextPointer);*/
 		copy = NULL;
 	}
@@ -130,7 +131,9 @@ void *allocate(size_t size){
 	nextPointer += size;
 	printf("nextpointer = %d und halfsize = %d\n", nextPointer, halfsize);
 	if(nextPointer >= halfsize){
-		printf("garbagecollector\n");
+		if(nextPointer >= halfsize)
+			return temp_heap = NULL;
+		printf("garbagecollector11111111111111111111111111111111111111111111111111111111111111111111\n");
 		garbagecollector();
 	}
 	return temp_heap;
@@ -154,7 +157,7 @@ int is_objRef(int i) {
 
 void pushNumber(int x) {
 	if(sp >= max_size) {
-		printf("stackoverflow.\n");
+		printf("Error: stack overflow\n");
 		exit(1);
 	} else {
 		stack[sp].isObjRef = 0;
@@ -166,7 +169,7 @@ void pushNumber(int x) {
 int popNumber(void) {
 	int pop_wert = stack[sp-1].u.number;
 	if(sp < 0) {
-		printf("Stackunderflow.\n");
+		printf("Error: stack underflow\n");
 		exit(1);
 	} else {
 		sp--;
@@ -178,7 +181,7 @@ int popNumber(void) {
 
 void pushObjRef(ObjRef x) {
 	if(sp >= max_size) {
-		printf("stackoverflow.\n");
+		printf("Error: stack overflow\n");
 		exit(1);
 	} else {
 		stack[sp].isObjRef = 1;
@@ -190,7 +193,7 @@ void pushObjRef(ObjRef x) {
 ObjRef popObjRef(void) {
 	ObjRef o = stack[sp-1].u.objRef;
 	if(sp < 0) {
-		printf("Stackunderflow.\n");
+		printf("Error: stack underflow\n");
 		exit(1);
 	} else {
 		sp--;
