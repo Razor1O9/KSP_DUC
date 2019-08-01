@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "stack8.h"
 
 Stackslot *stack;
-char *ziel_halbspeicher;
-char *quell_halbspeicher;
 ObjRef *static_data_area;
 // stackpointer
 unsigned int sp = 0;
@@ -15,86 +14,198 @@ unsigned int fp = 0;
 // return register
 ObjRef *r;
 int max_size = 0;
+unsigned int nextPointer = 0;
+
+char *ziel_halbspeicher;
+char *quell_halbspeicher;
+unsigned int set_stack_size = 0;
+unsigned int set_heap_size = 0;
+unsigned int halfsize = 0;
+
+header_t buffer;
+
+ObjRef copyObjectToFreeMem(ObjRef orig){
+/*	printf("Speicherstelle:  %p, Source:   %p,    Große Objekt:    %i, next Pointer:         %i\n",heap + nextPointer, orig ,(GET_SIZE(orig) + sizeof(unsigned int)),nextPointer);*/
+	if(!BROKEN_HEART(orig)){
+		printf("BROKEN_HEART\n");
+		if(IS_PRIM(orig)){
+			printf("IS_PRIM\n");
+	/*		printf("is prim\n");*/
+			memcpy(ziel_halbspeicher + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
+			printf("nach IS_PRIM\n");
+		/*	printf("%i             old prim\n", nextPointer);*/
+			nextPointer += (GET_SIZE(orig) + sizeof(unsigned int));
+			/*printf("%i            prim\n", nextPointer);*/
+		}
+		else{
+			printf("not IS_PRIM\n");
+		/*	printf("not prim\n");*/
+			memcpy(ziel_halbspeicher + nextPointer, orig, (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
+		/*	printf("not prim 2\n");*/
+			nextPointer += (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int)));
+		/*	printf("%i                not prim\n", nextPointer);*/
+			printf("nach not IS_PRIM\n");
+
+		}
+	}
+	printf("nach copy\n");
+	return orig;
+}
+
+ObjRef relocate(ObjRef orig) {
+	printf("relocate\n");
+	ObjRef copy;
+	if(orig == NULL) {
+		/*printf("%i      Null\n", nextPointer);*/
+		copy = NULL;
+	}
+	else if(BROKEN_HEART(orig)) {
+		/*printf("%i           Broken_heart\n", nextPointer);*/
+		copy = (ObjRef)(ziel_halbspeicher + FORWARDPOINTER(orig));
+	}
+	else
+	{
+	/*	printf("%i    %p      obj kopiert\n", nextPointer, objRef);*/
+		copy = copyObjectToFreeMem(orig);
+	/*	printf("%i    %p      copy kopiert\n", nextPointer, copy);*/
+
+		orig->size = SECBIT;
+		orig->size = ((char*)copy - ziel_halbspeicher)|SECBIT;
+	}
+	printf("nach relocate\n");
+	return copy;
+}
+
+void garbagecollector(){
+	char* scan = 0;
+	int i = 0;
+	int k = 0;
+	int j = 0;
+	char *temp_heap;
+	temp_heap = ziel_halbspeicher;
+	ziel_halbspeicher = quell_halbspeicher;
+	quell_halbspeicher = temp_heap;
+	nextPointer = 0;
+	
+	for(i = 0; i < sp; i++){
+		if(stack[i].isObjRef){
+			stack[i].u.objRef = relocate(stack[i].u.objRef);
+		}
+	}
+
+	bip.op1 = relocate(bip.op1);
+	bip.op2 = relocate(bip.op2);
+	bip.res = relocate(bip.res);
+	r[1] = relocate(r[1]);
+	for(j = 0; j < buffer.sda; j++){
+		static_data_area[j] = relocate(static_data_area[j]);
+	}
+	scan = ziel_halbspeicher;
+	while(scan != ziel_halbspeicher + nextPointer) {
+/* es gibt noch Objekte, die gescannt werden müssen */
+		if(!IS_PRIM((ObjRef)scan)) {
+			for(k = 0; k < GET_SIZE((ObjRef)scan); k++) {
+				GET_REFS((ObjRef)scan)[k] = relocate(GET_REFS((ObjRef)scan)[k]);
+			}
+		scan += GET_SIZE((ObjRef)scan) * 8 + sizeof(unsigned int);
+		}
+		else{
+			scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
+		}
+	}
+}
+
+void *allocate(size_t size){
+	char *temp_heap;
+	temp_heap = ziel_halbspeicher + nextPointer;
+	nextPointer += size;
+	printf("nextpointer = %d und halfsize = %d\n", nextPointer, halfsize);
+	if(nextPointer >= halfsize){
+		printf("garbagecollector\n");
+		garbagecollector();
+	}
+	return temp_heap;
+}
 
 ObjRef newCompoundObject(int objRefSize) {
-    ObjRef objRef = allocate(objRefSize * sizeof(ObjRef) + sizeof(unsigned int));
-    objRef->size = objRefSize | MSB;
+    	ObjRef objRef = allocate(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+	objRef->size = objRefSize | MSB;
 
-    for(int i = 0; i < objRefSize; i++)
-        GET_REFS(objRef)[i] = NULL;
+	for(int i = 0; i < objRefSize; i++)
+		GET_REFS(objRef)[i] = NULL;
 
     return objRef;
 }
 
 int is_objRef(int i) {
-    if(stack[i].isObjRef)
-        return 1;
-    return 0;
+	if(stack[i].isObjRef)
+		return 1;
+	return 0;
 }
 
 void pushNumber(int x) {
-    if(sp >= max_size) {
-        printf("stackoverflow.\n");
-        exit(1);
-    } else {
-        stack[sp].isObjRef = 0;
-        stack[sp].u.number = x;
-        sp++;
-    }
+	if(sp >= max_size) {
+		printf("stackoverflow.\n");
+		exit(1);
+	} else {
+		stack[sp].isObjRef = 0;
+		stack[sp].u.number = x;
+		sp++;
+	}
 }
 
 int popNumber(void) {
-    int pop_wert = stack[sp-1].u.number;
-    if(sp < 0) {
-        printf("Stackunderflow.\n");
-        exit(1);
-    } else {
-        sp--;
-        stack[sp].u.number = 0;
-        stack[sp].u.objRef = NULL;
-    }
-    return pop_wert;
+	int pop_wert = stack[sp-1].u.number;
+	if(sp < 0) {
+		printf("Stackunderflow.\n");
+		exit(1);
+	} else {
+		sp--;
+		stack[sp].u.number = 0;
+		stack[sp].u.objRef = NULL;
+	}
+	return pop_wert;
 }
 
 void pushObjRef(ObjRef x) {
-    if(sp >= max_size) {
-        printf("stackoverflow.\n");
-        exit(1);
-    } else {
-        stack[sp].isObjRef = 1;
-        stack[sp].u.objRef = x;
-        sp++;
-    }
+	if(sp >= max_size) {
+		printf("stackoverflow.\n");
+		exit(1);
+	} else {
+		stack[sp].isObjRef = 1;
+		stack[sp].u.objRef = x;
+		sp++;
+	}
 }
 
 ObjRef popObjRef(void) {
-    ObjRef o = stack[sp-1].u.objRef;
-    if(sp < 0) {
-        printf("Stackunderflow.\n");
-        exit(1);
-    } else {
-        sp--;
-        stack[sp].u.objRef = NULL;
-    }
-    return o;
+	ObjRef o = stack[sp-1].u.objRef;
+	if(sp < 0) {
+		printf("Stackunderflow.\n");
+		exit(1);
+	} else {
+		sp--;
+		stack[sp].u.objRef = NULL;
+	}
+	return o;
 }
 
 // push local variable
 void pushl(int location) {
-    pushObjRef(stack[location].u.objRef);
+	pushObjRef(stack[location].u.objRef);
 }
 
 // pop local variable
 void popl(int location) {
-    stack[location].u.objRef = popObjRef();
+	stack[location].u.objRef = popObjRef();
 }
 
 // push global variable
 void pushg(int location) {
-    pushObjRef(static_data_area[location]);
+	pushObjRef(static_data_area[location]);
 }
 
 // pop global variable
 void popg(int location) {
-    static_data_area[location] = popObjRef();
+	static_data_area[location] = popObjRef();
 }

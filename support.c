@@ -6,16 +6,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "bigint/build/include/support.h"
+#include "support.h"
 #include "stack8.h"
+
 
 /*
  * This routine is called in case a fatal error has occurred.
  * It should print the error message and terminate the program.
  */
 void fatalError(char *msg) {
-    printf("Fatal error: %s\n", msg);
-    exit(1);
+  printf("Fatal error: %s\n", msg);
+  exit(1);
 }
 
 
@@ -32,12 +33,13 @@ void fatalError(char *msg) {
  * the function returns.
  */
 ObjRef newPrimObject(int dataSize) {
-    ObjRef objRef;
+  ObjRef objRef;
 
-    objRef = allocate(sizeof(unsigned int) + dataSize * sizeof(unsigned char));
-    if (objRef == NULL) {
-        fatalError("newPrimObject() got no memory");
-    }
-    objRef->size = dataSize;
-    return objRef;
+  objRef = allocate(sizeof(unsigned int) +
+                  dataSize * sizeof(unsigned char));
+  if (objRef == NULL) {
+    fatalError("newPrimObject() got no memory");
+  } 
+  objRef->size = dataSize;
+  return objRef;
 }
