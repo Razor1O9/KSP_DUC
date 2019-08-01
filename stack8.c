@@ -73,7 +73,7 @@ ObjRef relocate(ObjRef orig) {
 	/*	printf("%i    %p      copy kopiert\n", nextPointer, copy);*/
 
 		orig->size = SECBIT;
-		(orig->size & ~(MSB | SECBIT)) = copy;
+		orig->size = FORWARDPOINTER(copy);
 	}
 	printf("nach relocate\n");
 	return copy;
