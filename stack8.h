@@ -43,9 +43,9 @@ extern unsigned int sp;
 extern unsigned int fp;
 extern ObjRef *r;
 extern int max_size;
-unsigned int set_stack_size;
-unsigned int set_heap_size;
-unsigned int halfsize;
+extern unsigned int set_stack_size;
+extern unsigned int set_heap_size;
+extern unsigned int halfsize;
 
 
 int is_objRef(int);

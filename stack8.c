@@ -126,23 +126,43 @@ void garbagecollector(){
 
 void *allocate(size_t size){
 	char *temp_heap;
+	
+	/*printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
+	printf("ziel_halbspeicher + nextPointer = %p\n", ziel_halbspeicher + nextPointer);
+	printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);*/
+	//temp_heap = ziel_halbspeicher;
+	//temp_heap = temp_heap + + nextPointer;
 	temp_heap = ziel_halbspeicher + nextPointer;
-	printf("temp = %p\n", temp_heap);
-	nextPointer += size;
-	printf("nextpointer = %d und halfsize = %d\n", nextPointer, halfsize);
-	if(nextPointer >= halfsize){
-		if(nextPointer >= halfsize)
-			return temp_heap = NULL;
+	
+	printf("Vergleich von Zeigern = %d\n", temp_heap >= (ziel_halbspeicher + halfsize));
+	if(temp_heap >= (ziel_halbspeicher + halfsize)){
+		printf("gc\n");
+	
 		printf("garbagecollector11111111111111111111111111111111111111111111111111111111111111111111\n");
 		garbagecollector();
 	}
+	nextPointer += size;
+	//printf("Vergleich von Zeigern 2 = %d\n", (temp_heap + size) >= (ziel_halbspeicher + halfsize));
+	if((temp_heap + size) >= (ziel_halbspeicher + halfsize)) {
+		printf("gc\n");
+		garbagecollector();	
+	//printf("nextPointer >= halfsize = %d\n", nextPointer >= halfsize);
+	} else if(nextPointer >= halfsize) {
+			return temp_heap = NULL;
+	printf("temp_heap = %p\n", temp_heap);
+	printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);
+	}	
+	//printf("halfsize = %d\n", halfsize);
+	
 	return temp_heap;
 }
 
 ObjRef newCompoundObject(int objRefSize) {
     	ObjRef objRef = allocate(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
 	objRef->size = objRefSize | MSB;
-
+	if (objRef == NULL) {
+   		 fatalError("newCompoundObject() got no memory");
+  	}
 	for(int i = 0; i < objRefSize; i++)
 		GET_REFS(objRef)[i] = NULL;
 

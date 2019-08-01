@@ -745,7 +745,9 @@ void start(char *argv) {
 		quell_halbspeicher = malloc(set_heap_size * 512);
 		memory_is_full(quell_halbspeicher);
 		halfsize = set_heap_size * 512;
-		printf("set_heap_size = %d\n", set_heap_size);
+		//temp_heap = ziel_halbspeicher;
+		//printf("set_heap_size = %d\n", set_heap_size);
+		//printf("temp = ziel = %p\n", temp_heap);
 	} else {
 		ziel_halbspeicher = malloc(8192 * 512);
 		memory_is_full(ziel_halbspeicher);
