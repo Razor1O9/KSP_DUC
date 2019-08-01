@@ -62,7 +62,7 @@ ObjRef relocate(ObjRef orig) {
 	else if((orig->size & SECBIT) == 1) {
 		printf("realocate BROKEN_HEART\n");
 
-		copy = (ObjRef)(orig + FORWARDPOINTER(orig));
+        copy->size = FORWARDPOINTER(orig);
 	}
 	else
 	{
