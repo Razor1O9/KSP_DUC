@@ -71,7 +71,7 @@ ObjRef relocate(ObjRef orig) {
 		copy = copyObjectToFreeMem(orig);
 
 		orig->size = SECBIT;
-		orig->size = FORWARDPOINTER(orig);
+		orig->size = FORWARDPOINTER(copy);
 	}
 	printf("nach relocate\n");
 	return copy;
