@@ -66,7 +66,7 @@ ObjRef relocate(ObjRef orig) {
 	else if((orig->size & SECBIT) == 1) {
 		printf("realocate BROKEN_HEART\n");
 		/*printf("%i           Broken_heart\n", nextPointer);*/
-		copy = (ObjRef)(ziel_halbspeicher + FORWARDPOINTER(orig));
+		copy = FORWARDPOINTER(orig);
 	}
 	else
 	{
