@@ -30,8 +30,9 @@ ObjRef copyObjectToFreeMem(ObjRef orig){
 		printf("BROKEN_HEART\n");
 		if(IS_PRIM(orig)){
 			printf("IS_PRIM\n");
+			printf("nextPointer = %d und ziel_halbspeicher = %p und orig = %p\n", nextPointer, ziel_halbspeicher + nextPointer, (void*) orig);
 	/*		printf("is prim\n");*/
-			memcpy(ziel_halbspeicher + nextPointer, orig, (GET_SIZE(orig) + sizeof(unsigned int)));
+			memcpy((ziel_halbspeicher + nextPointer), orig, (GET_SIZE(orig) + sizeof(unsigned int)));
 			printf("nach IS_PRIM\n");
 		/*	printf("%i             old prim\n", nextPointer);*/
 			nextPointer += (GET_SIZE(orig) + sizeof(unsigned int));
@@ -59,18 +60,20 @@ ObjRef relocate(ObjRef orig) {
 		/*printf("%i      Null\n", nextPointer);*/
 		copy = NULL;
 	}
-	else if(BROKEN_HEART(orig)) {
+	else if((orig->size & SECBIT) == 1) {
+		printf("realocate BROKEN_HEART\n");
 		/*printf("%i           Broken_heart\n", nextPointer);*/
 		copy = (ObjRef)(ziel_halbspeicher + FORWARDPOINTER(orig));
 	}
 	else
 	{
+		printf("realocate else = %p\n", (void*) orig);
 	/*	printf("%i    %p      obj kopiert\n", nextPointer, objRef);*/
 		copy = copyObjectToFreeMem(orig);
 	/*	printf("%i    %p      copy kopiert\n", nextPointer, copy);*/
 
 		orig->size = SECBIT;
-		orig->size = ((char*)copy - ziel_halbspeicher)|SECBIT;
+		(orig->size & ~(MSB | SECBIT)) = copy;
 	}
 	printf("nach relocate\n");
 	return copy;
@@ -86,20 +89,24 @@ void garbagecollector(){
 	ziel_halbspeicher = quell_halbspeicher;
 	quell_halbspeicher = temp_heap;
 	nextPointer = 0;
-	
+	printf("vor stack\n");
 	for(i = 0; i < sp; i++){
 		if(stack[i].isObjRef){
 			stack[i].u.objRef = relocate(stack[i].u.objRef);
+			printf("stack[i].u.objRef = %p\n", (void*) stack[i].u.objRef);
 		}
 	}
-
+	printf("nach stack\n");
 	bip.op1 = relocate(bip.op1);
 	bip.op2 = relocate(bip.op2);
 	bip.res = relocate(bip.res);
+	printf("bip\n");
 	r[1] = relocate(r[1]);
+	printf("returnregister\n");
 	for(j = 0; j < buffer.sda; j++){
 		static_data_area[j] = relocate(static_data_area[j]);
 	}
+	printf("static_data_area\n");
 	scan = ziel_halbspeicher;
 	while(scan != ziel_halbspeicher + nextPointer) {
 /* es gibt noch Objekte, die gescannt werden müssen */
@@ -118,6 +125,7 @@ void garbagecollector(){
 void *allocate(size_t size){
 	char *temp_heap;
 	temp_heap = ziel_halbspeicher + nextPointer;
+	printf("temp = %p\n", temp_heap);
 	nextPointer += size;
 	printf("nextpointer = %d und halfsize = %d\n", nextPointer, halfsize);
 	if(nextPointer >= halfsize){
