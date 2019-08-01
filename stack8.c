@@ -24,6 +24,8 @@ unsigned int halfsize = 0;
 
 header_t buffer;
 
+char *temp_heap;
+
 ObjRef copyObjectToFreeMem(ObjRef orig){
 /*	printf("Speicherstelle:  %p, Source:   %p,    Große Objekt:    %i, next Pointer:         %i\n",heap + nextPointer, orig ,(GET_SIZE(orig) + sizeof(unsigned int)),nextPointer);*/
 	if(!BROKEN_HEART(orig)){
@@ -124,8 +126,18 @@ void garbagecollector(){
 	}
 }
 
-void *allocate(size_t size){
-	char *temp_heap;
+void *allocate_header(size_t size) {
+	temp_heap = ziel_halbspeicher + nextPointer;
+	nextPointer += size;
+	if(nextPointer >= halfsize) {
+		printf("zu gross\n");
+		return temp_heap = NULL;
+	}
+	printf("zu klein\n");
+	return temp_heap;
+}
+
+void *allocate_data(size_t size){
 	
 	/*printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
 	printf("ziel_halbspeicher + nextPointer = %p\n", ziel_halbspeicher + nextPointer);
@@ -134,7 +146,7 @@ void *allocate(size_t size){
 	//temp_heap = temp_heap + + nextPointer;
 	temp_heap = ziel_halbspeicher + nextPointer;
 	
-	printf("Vergleich von Zeigern = %d\n", temp_heap >= (ziel_halbspeicher + halfsize));
+	//printf("Vergleich von Zeigern = %d\n", temp_heap >= (ziel_halbspeicher + halfsize));
 	if(temp_heap >= (ziel_halbspeicher + halfsize)){
 		printf("gc\n");
 	
@@ -146,19 +158,19 @@ void *allocate(size_t size){
 	if((temp_heap + size) >= (ziel_halbspeicher + halfsize)) {
 		printf("gc\n");
 		garbagecollector();	
+	} //else if(nextPointer >= halfsize) {
+		//	return temp_heap = NULL;
+	//printf("temp_heap = %p\n", temp_heap);
+	//printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);
+	//}
 	//printf("nextPointer >= halfsize = %d\n", nextPointer >= halfsize);
-	} else if(nextPointer >= halfsize) {
-			return temp_heap = NULL;
-	printf("temp_heap = %p\n", temp_heap);
-	printf("ziel_halbspeicher + halfsize = %p\n", ziel_halbspeicher + halfsize);
-	}	
 	//printf("halfsize = %d\n", halfsize);
-	
+	//printf("temp_heap = %p\n", temp_heap);
 	return temp_heap;
 }
 
 ObjRef newCompoundObject(int objRefSize) {
-    	ObjRef objRef = allocate(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
+    	ObjRef objRef = allocate_data(sizeof(unsigned int) + objRefSize * sizeof(ObjRef));
 	objRef->size = objRefSize | MSB;
 	if (objRef == NULL) {
    		 fatalError("newCompoundObject() got no memory");

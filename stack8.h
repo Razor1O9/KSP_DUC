@@ -58,7 +58,8 @@ void popl(int);
 void pushg(int);
 void popg(int);
 
-void *allocate(size_t);
+void *allocate_header(size_t);
+void *allocate_data(size_t);
 ObjRef newCompoundObject(int numObjRefs);
 
 #endif

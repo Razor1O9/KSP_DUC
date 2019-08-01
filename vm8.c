@@ -394,7 +394,7 @@ void memory_is_full(void *x) {
 }
 
 void load_data(char file[]) { 
-	r = allocate(sizeof(ObjRef));
+	r = allocate_header(sizeof(ObjRef));
 
 	/*create file pointer*/
 	FILE *fp;	
@@ -425,7 +425,7 @@ void load_data(char file[]) {
 				
 		// allocatre memory for Static Data Area
 		// warum sizeof(static_data_area) = 8 anstatt 108?
-		static_data_area = allocate(buffer.sda * sizeof(ObjRef));
+		static_data_area = allocate_header(buffer.sda * sizeof(ObjRef));
 		memory_is_full(static_data_area);
 		/*if(static_data_area == NULL) {
 			printf("memory is full.");
@@ -434,7 +434,7 @@ void load_data(char file[]) {
 
 		// allocate memory program memory
 		// warum sizeof(ps) = 8 anstatt 108?
-		ps = allocate(buffer.noi * sizeof(int));
+		ps = allocate_header(buffer.noi * sizeof(int));
 		memory_is_full(ps);
 		/*if(ps == NULL) {
 			printf("memory is full.");
