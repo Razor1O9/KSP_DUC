@@ -136,7 +136,7 @@ void *allocate_header(size_t size) {
 	temp_heap = ziel_halbspeicher + nextPointer;
 	nextPointer += size;
 	if(nextPointer >= halfsize) {
-		printf("zu gross\n");
+        printf("Ninja Virtual Machine started\n");
 		return temp_heap = NULL;
 	}
 	printf("zu klein\n");
