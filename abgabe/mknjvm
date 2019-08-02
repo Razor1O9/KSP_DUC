@@ -1,0 +1,2 @@
+#!/bin/sh
+gcc -I bigint/build/include -L bigint/build/lib -g -Wall -std=c99 -pedantic -o vm support.c stack8.c vm8.c -lbigint
