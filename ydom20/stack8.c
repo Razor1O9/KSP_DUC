@@ -133,7 +133,7 @@ ObjRef newCompoundObject(int objRefSize) {
 	if (objRef == NULL) {
    		 fatalError("newCompoundObject() got no memory");
   	}
-	for(int i = 0; i < objRefSize; i++)
+	for(int i = 0; i < GET_SIZE(objRef); i++)
 		GET_REFS(objRef)[i] = NULL;
 
     return objRef;
