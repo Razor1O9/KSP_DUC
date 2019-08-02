@@ -30,7 +30,6 @@ char *temp_heap;
 int button = 1;
 
 ObjRef copyObjectToFreeMem(ObjRef orig){
-//	if(!BROKEN_HEART(orig)){
 		if(IS_PRIM(orig)){
 			memcpy((ziel_halbspeicher + nextPointer), orig, (GET_SIZE(orig) + sizeof(unsigned int)));
 			nextPointer += (GET_SIZE(orig) + sizeof(unsigned int));
@@ -39,7 +38,6 @@ ObjRef copyObjectToFreeMem(ObjRef orig){
 			memcpy(ziel_halbspeicher + nextPointer, orig, (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int))));
 			nextPointer += (sizeof(ObjRef)*(GET_SIZE(orig) + sizeof(unsigned int)));
 		}
-//	}
 	return orig;
 }
 
@@ -68,13 +66,10 @@ void garbagecollector(){
 	ziel_halbspeicher = quell_halbspeicher;
 	quell_halbspeicher = temp;
 	nextPointer = 0;
-//	printf("vor for\n");
 	for(int i = 0; i < buffer.sda; i++){
 		static_data_area[i] = relocate(static_data_area[i]);
 	}
-//	printf("vor r\n");
 	r[1] = relocate(r[1]);
-//	printf("vor for2\n");
 	for(int j = 0; j < sp; j++){
 		if(stack[j].isObjRef){
 			stack[j].u.objRef = relocate(stack[j].u.objRef);
@@ -87,22 +82,14 @@ void garbagecollector(){
 	bip.rem = relocate(bip.rem);
 
 	scan = ziel_halbspeicher;
-//	printf("for while\n");
 	while(scan != ziel_halbspeicher + nextPointer) {
-	//	printf("if\n");
 		if(!IS_PRIM((ObjRef)scan)) {
-	//		printf("vor for\n");
 			for(int k = 0; k < GET_SIZE((ObjRef)scan); k++) {
 				GET_REFS((ObjRef)scan)[k] = relocate(GET_REFS((ObjRef)scan)[k]);
 			}
-		//	scan += GET_SIZE((ObjRef)scan) + sizeof(unsigned int);
 		}
-		//else{
 		scan +=  (GET_SIZE((ObjRef)scan) + sizeof(unsigned int));
-		//}
-	//	printf("scan\n");
 	}
-//	printf("end\n");
 	nextPointer = 0;
 	if(button)
 		button = 0;
@@ -122,27 +109,18 @@ void *allocate_header(size_t size) {
 
 void *allocate_data(size_t size){
 	char *x;
-
-	//printf("Vergleich von Zeigern 2 = %d\n", (temp_heap + size) >= (ziel_halbspeicher + halfsize));
 	if(button) {
 		temp_heap = ziel_halbspeicher + nextPointer;
-//		printf("temp_heap = %p\n", temp_heap);
 		nextPointer += size;	
-//		printf("quell_halbspeicher = %p\n", quell_halbspeicher);
 		x = temp_heap;
 		if(x + size > quell_halbspeicher) {
-//			printf("gc\n");
 			garbagecollector();	
 		}
 	} else {
 		temp_heap = ziel_halbspeicher - nextPointer;
-//		printf("temp_heap = %p\n", temp_heap);
 		nextPointer += size;	
-//		printf("quell_halbspeicher = %p\n", quell_halbspeicher);
-//		printf("size = %ld\n", size);
 		x = temp_heap;
 		if(x - size < quell_halbspeicher) {
-//			printf("gc2\n");
 			garbagecollector();	
 		}
 	} 

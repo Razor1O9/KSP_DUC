@@ -725,18 +725,21 @@ void start_njvm(char *argv) {
 	if(set_heap_size > 0) {
 		halfsize = set_heap_size * 512;
 		heap = malloc(set_heap_size * 1024);
-		printf("heap = %p\n", heap);
+		//printf("heap = %p\n", heap);
 		ziel_halbspeicher = heap;
-		printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
+		//printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
 		memory_is_full(ziel_halbspeicher);
 		quell_halbspeicher = ziel_halbspeicher + halfsize;
 		memory_is_full(quell_halbspeicher);
 	} else {
-		ziel_halbspeicher = malloc(8192 * 512);
-		memory_is_full(ziel_halbspeicher);
-		quell_halbspeicher = malloc(8192 * 512);
-		memory_is_full(quell_halbspeicher);
 		halfsize = 8192 * 512;
+		heap = malloc(8192 * 1024);
+		//printf("heap = %p\n", heap);
+		ziel_halbspeicher = heap;
+		//printf("ziel_halbspeicher = %p\n", ziel_halbspeicher);
+		memory_is_full(ziel_halbspeicher);
+		quell_halbspeicher = ziel_halbspeicher + halfsize;
+		memory_is_full(quell_halbspeicher);
 	}
 
 	if(start_debug && bin == 1) {
